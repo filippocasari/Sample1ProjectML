@@ -75,33 +75,37 @@ for i in range(len(Y)):
     Y[i]=switch_Y[Y[i]]
 
 '''
-#--------------------------Pre-processing--------------------------------
+print("X : \n", X)
+# --------------------------Pre-processing--------------------------------
 X_normalized = MinMaxScaler().fit_transform(X)
+print("X normalized: \n", X_normalized)
 X_standardized = StandardScaler().fit_transform(X)
-#------------------------------------------------------------------------
+print("X standardized: \n", X_standardized)
+# ------------------------------------------------------------------------
 le = LabelEncoder()
 le.fit_transform(np.unique(Y))
 print(list(le.classes_))
-y_dense = LabelBinarizer().fit_transform(Y)
-#------------------------------------------------------------------------
+# y_dense = LabelBinarizer().fit_transform(Y)
+# ------------------------------------------------------------------------
 # No preprocessing
 X_train, X_test, Y_train, \
 Y_test = \
     train_test_split(X, Y, test_size=0.3)
-#------------------------------------------------------------------------
-#Yes preprocessing
-#-----------------------NORMALIZATION_SPLIT-------------------------------
+
+# ------------------------------------------------------------------------
+# Yes preprocessing
+# -----------------------NORMALIZATION_SPLIT-------------------------------
 X_train_NORM, X_test_NORM, Y_train_NORM, \
 Y_test_NORM = \
-    train_test_split(X, Y, test_size=0.3)
-#-----------------------NORMALIZATION_SPLIT-------------------------------
+    train_test_split(X_normalized, Y, test_size=0.3)
+# -----------------------NORMALIZATION_SPLIT-------------------------------
 X_train_STAND, X_test_STAND, Y_train_STAND, \
 Y_test_STAND = \
-    train_test_split(X, Y, test_size=0.3)
-#_____________________________________
+    train_test_split(X_standardized, Y, test_size=0.3)
+# _____________________________________
 # y_sparse = sparse.csr_matrix(y_dense)
 # print(y_sparse)
-#_________________CALCULATING FREQUENCY___________________________
+# _________________CALCULATING FREQUENCY___________________________
 
 class1_num_y_train = 0
 class2_num_y_train = 0
@@ -117,34 +121,36 @@ for i in Y_train:
     elif (i == 'vgood'):
         class4_num_y_train += 1
 print(np.shape(Y_train))
-weight_class_1 = class1_num_y_train / (1208)
-weight_class_2 = class2_num_y_train / (1208)
-weight_class_3 = class3_num_y_train / (1208)
-weight_class_4 = class4_num_y_train / (1208)
-#--------------------------------STARTING FIT_______________________________________________
+weight_class_1 = class1_num_y_train / 1208
+weight_class_2 = class2_num_y_train / 1208
+weight_class_3 = class3_num_y_train / 1208
+weight_class_4 = class4_num_y_train / 1208
+# --------------------------------STARTING FIT_______________________________________________
 # BALANCING WITH WEIGHT, NO PREPROCESSING
-gnb_weighted_no_preprocess = GaussianNB(priors=[weight_class_1, weight_class_2, weight_class_3, weight_class_4]).fit(X_train, Y_train)
+gnb_weighted_no_preprocess = GaussianNB(priors=[weight_class_1, weight_class_2, weight_class_3, weight_class_4]).fit(
+    X_train, Y_train)
 # NO WEIGHT, NO PREPROCESSING
 gnb_not_balanced = GaussianNB().fit(X_train, Y_train)
 # BALANCING WITH WEIGHT,PREPROCESSING, NORMAL
-gdb_weighted_preprocc_norm=GaussianNB(priors=[weight_class_1, weight_class_2, weight_class_3, weight_class_4]).fit(X_train_NORM, Y_train_NORM)
+gdb_weighted_preprocc_norm = GaussianNB(priors=[weight_class_1, weight_class_2, weight_class_3, weight_class_4]).fit(
+    X_train_NORM, Y_train_NORM)
 # BALANCING WITH WEIGHT,PREPROCESSING, STAND
-gdb_weighted_preprocc_stand=GaussianNB(priors=[weight_class_1, weight_class_2, weight_class_3, weight_class_4]).fit(X_train_STAND, Y_train_STAND)
+gdb_weighted_preprocc_stand = GaussianNB(priors=[weight_class_1, weight_class_2, weight_class_3, weight_class_4]).fit(
+    X_train_STAND, Y_train_STAND)
 
-
-#--------------------PREDICTIONS---------------------------------
+# --------------------PREDICTIONS---------------------------------
 
 gnb_predictions = gnb_weighted_no_preprocess.predict(X_test)
 gnb_predictions_no_balancing = gnb_not_balanced.predict(X_test)
-gnb_predictions_norm=gdb_weighted_preprocc_norm.predict(X_test)
-gnb_predictions_stand=gdb_weighted_preprocc_stand.predict(X_test)
+gnb_predictions_norm = gdb_weighted_preprocc_norm.predict(X_test_NORM)
+gnb_predictions_stand = gdb_weighted_preprocc_stand.predict(X_test_STAND)
 
 # accuracy on X_test
 target_names = ['unacc', 'acc', 'good', 'vgood']
 # print("Score GNB with balancing: ", gnb_predictions.score(X_test, Y_test))
 # print("Score GNB with no balancing: ", gnb_predictions_no_balancing.score(X_test, Y_test))
 
-#---------------------------------PRINTING-----------------------------------------
+# ---------------------------------PRINTING-----------------------------------------
 
 print("-----------------------WITH-BALANCING-Normalization-Weighted----------------------------")
 print(classification_report(Y_test, gnb_predictions_norm, target_names=target_names))
