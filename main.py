@@ -1,3 +1,5 @@
+from time import sleep
+
 from sklearn.feature_selection import SelectKBest, chi2, SelectFromModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
@@ -51,13 +53,24 @@ if __name__ == '__main__':
 
 
 
-    print(names_cols)
-    try:
-        for i in names_cols:
-            sns.displot(X, x=i)
-            plt.show()
-    except:
-        print("error to plot")
+    print(names_cols+"\n"+str(len(names_cols)))
+    figures=[]
+    #TODO scaler boolean values
+    for i in names_cols:
+
+        figure=sns.displot(X, x=i)
+        figures.append(figure)
+        figure.savefig("./plots/"+str(i)+"_not_preprocessing")
+        plt.close()
+    scaler = StandardScaler().fit(X[names_cols])
+    X_std=pd.DataFrame(scaler.transform(X[names_cols]), columns=names_cols)
+    for i in names_cols:
+
+        figure=sns.displot(X_std, x=i)
+        figures.append(figure)
+        figure.savefig("./plots/"+str(i)+"_not_preprocessing_standardized")
+        plt.close()
+
     print("samples of class 0: " + str(count_class_0))
     print("samples of class 1: " + str(count_class_1))
     print("samples of class 2: " + str(count_class_2))
