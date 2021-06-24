@@ -2,6 +2,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 
 
+
 def Logistic_regression(X_train, Y_train, X_test, Y_test):
 
     log_regr = LogisticRegression(class_weight='balanced', multi_class='multinomial',
