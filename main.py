@@ -1,5 +1,8 @@
+from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC
 
+from Features_Selection import feature_selection_kbest
 from sklearn import preprocessing
 import seaborn as sns
 import pandas as pd
@@ -19,6 +22,24 @@ def plot_metrics_for_each_features(names_cols, X, name_png):
         # ed avere un errore a Runtime
 
 
+def splitting_train_test(X,Y):
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, Y, random_state=0, train_size=0.66
+    )
+    return X_train, X_test, Y_train, Y_test
+
+
+def select_best_feauteres_with_kbest(X, Y):
+    for i in range(2, 28):
+        X_new=feature_selection_kbest(X, Y, i)
+        X_train, X_test,Y_train, Y_test= splitting_train_test(X_new,Y)
+        Logistic_regression(X_train, Y_train, X_test, Y_test)
+def select_from_model(X,Y):
+    svc = LinearSVC(C=0.01, penalty="l1", dual=False).fit(X, Y)
+    model = SelectFromModel(lsvc, prefit=True)
+    X_new = model.transform(X)
+    X_new.shape
+
 if __name__ == '__main__':
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
@@ -30,7 +51,6 @@ if __name__ == '__main__':
     # drop della colonna corrispondente al target output
     X = df.drop(columns='Baselinehistological staging')
     print("X:\n" + str(X))
-
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
     le = LabelEncoder()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
@@ -46,6 +66,7 @@ if __name__ == '__main__':
     # stesso preprocessing per l'array di output
     Y = le.fit_transform(Y)
     print("Y:\n" + str(Y))
+
     # inizio conteggio per ogni classe, per vedere se è bilanciato
     count_class_0 = 0
     count_class_1 = 0
@@ -63,6 +84,7 @@ if __name__ == '__main__':
             count_class_3 += 1
 
     # ----------------------------------PREPROCESSING----------------------------------------
+
     names_cols = X.columns  # nomi delle colonne
     scaler = StandardScaler()
     X_std = pd.DataFrame(scaler.fit_transform(X[names_cols]), columns=names_cols)
@@ -97,6 +119,9 @@ if __name__ == '__main__':
     X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
         X_scale, Y, random_state=0, train_size=0.66
     )
+
+    select_best_feauteres_with_kbest(X, Y)
+    select_from_model(X,Y)
     print("Logistic regression without preprocessing:\n")
     Logistic_regression(X_train, Y_train, X_test, Y_test)
     print("Logistic regression with Standardization:\n")

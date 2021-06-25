@@ -1,6 +1,5 @@
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
-
+from sklearn.metrics import classification_report, accuracy_score
 
 
 def Logistic_regression(X_train, Y_train, X_test, Y_test):
@@ -9,4 +8,6 @@ def Logistic_regression(X_train, Y_train, X_test, Y_test):
                                   max_iter=10000, solver='saga')
     log_regr.fit(X=X_train, y=Y_train)
     y_pred = log_regr.predict(X=X_test)
-    print(classification_report(Y_test, y_pred))
+    print("report with shape of X:"+str(X_train.shape))
+    print(accuracy_score(Y_test, y_pred))
+    return log_regr
