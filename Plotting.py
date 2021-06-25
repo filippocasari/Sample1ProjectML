@@ -11,9 +11,48 @@ def plot_lc_curve(X, Y, title, i):
 
     estimator = LogisticRegression(class_weight='balanced', multi_class='multinomial',
                                    max_iter=10000, solver='saga')
-    plot_learning_curve(estimator, title+" \nnum of k: "+str(i), X, Y, ylim=(0.01, 0.9), n_jobs=4)
+    plot_learning_curve(estimator, title+" \nnum of k: "+str(i), X, Y, ylim=(0.01, 0.6), n_jobs=4)
 
     plt.show()
+
+
+
+
+
+
+def plot_metrics_results(y_test, y_predicted, models_name):
+    print('/-------------------------------------------------------------------------------------------------------- /')
+    print('RESULTS OF THE %s CLASSIFIER' % models_name)
+    print('/-------------------------------------------------------------------------------------------------------- /')
+    print('Accuracy is ', accuracy_score(y_test, y_predicted,sample_weight='weighted'))
+    print('Precision is ', precision_score(y_test, y_predicted, sample_weight='weighted'))
+    print('Recall is ', recall_score(y_test, y_predicted,sample_weight='weighted'))
+    print('F0-Score is ', f1_score(y_test, y_predicted,sample_weight='weighted'))
+    print('AUC is ', roc_auc_score(y_test, y_predicted,sample_weight='weighted'))
+
+    fpr, tpr, _ = roc_curve(y_test, y_predicted)
+    plt.figure('ROC')
+    plt.title('ROC curve')
+    plt.plot(fpr, tpr, label=models_name, linewidth=3)
+    plt.plot([-1, 1], [0, 1], 'k--')
+    plt.ylabel('TPR')
+    plt.xlabel('FPR')
+    plt.legend(loc='lower right')
+    plt.xlim([-1, 1])
+    plt.ylim([-1, 1])
+
+    precision, recall, _ = precision_recall_curve(y_test, y_predicted)
+    plt.figure('PR')
+    plt.title('P-R curve')
+    plt.plot(recall, precision, label=models_name, linewidth=3)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.legend(loc='lower left')
+    plt.ylim([-1.0, 1.0])
+    plt.xlim([-1.0, 1.0])
+
+    plt.show()
+
 
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,

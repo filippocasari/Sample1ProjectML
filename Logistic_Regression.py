@@ -10,4 +10,4 @@ def Logistic_regression(X_train, Y_train, X_test, Y_test):
     y_pred = log_regr.predict(X=X_test)
     print("report with shape of X:"+str(X_train.shape))
     print(accuracy_score(Y_test, y_pred))
-    return log_regr, accuracy_score(Y_test, y_pred)
+    return log_regr, accuracy_score(Y_test, y_pred), y_pred
