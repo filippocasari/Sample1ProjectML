@@ -5,7 +5,6 @@ from sklearn.svm import LinearSVC
 
 import Plotting
 from Features_Selection import feature_selection_kbest
-from sklearn import preprocessing
 import seaborn as sns
 import pandas as pd
 
@@ -35,9 +34,10 @@ def select_best_feauteres_with_kbest(X, Y):
     for i in range(2, 28):
         X_new = feature_selection_kbest(X, Y, i)
         X_train, X_test, Y_train, Y_test = splitting_train_test(X_new, Y)
-        title="Learning Curves with Logistic Regression (with select from model)"
+        title = "Learning Curves with Logistic Regression (with select from model)"
         log_regr, accuracy_score = Logistic_regression(X_train, Y_train, X_test, Y_test)
-        Plotting.plot_lc_curve(X_train, Y_train, title)
+        if i < 10:
+            Plotting.plot_lc_curve(X_train, Y_train, title, i)
 
 
 def select_from_model(X, Y):
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     )
 
     select_best_feauteres_with_kbest(X, Y)
-    #select_from_model(X, Y)
+    # select_from_model(X, Y)
     # Plotting.plot_lc_curve(X_train, Y_train)
     print("Logistic regression without preprocessing:\n")
     # Logistic_regression(X_train, Y_train, X_test, Y_test)
