@@ -1,7 +1,9 @@
+from scipy.stats import chi2
 from sklearn.feature_selection import SelectFromModel
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
+import Plotting
 from Features_Selection import feature_selection_kbest
 from sklearn import preprocessing
 import seaborn as sns
@@ -22,23 +24,39 @@ def plot_metrics_for_each_features(names_cols, X, name_png):
         # ed avere un errore a Runtime
 
 
-def splitting_train_test(X,Y):
+def splitting_train_test(X, Y):
     X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y, random_state=0, train_size=0.66
+        X, Y, random_state=0, train_size=0.7
     )
     return X_train, X_test, Y_train, Y_test
 
 
 def select_best_feauteres_with_kbest(X, Y):
     for i in range(2, 28):
-        X_new=feature_selection_kbest(X, Y, i)
-        X_train, X_test,Y_train, Y_test= splitting_train_test(X_new,Y)
-        Logistic_regression(X_train, Y_train, X_test, Y_test)
-def select_from_model(X,Y):
-    svc = LinearSVC(C=0.01, penalty="l1", dual=False).fit(X, Y)
-    model = SelectFromModel(lsvc, prefit=True)
-    X_new = model.transform(X)
-    X_new.shape
+        X_new = feature_selection_kbest(X, Y, i)
+        X_train, X_test, Y_train, Y_test = splitting_train_test(X_new, Y)
+        title="Learning Curves with Logistic Regression (with select from model)"
+        log_regr, accuracy_score = Logistic_regression(X_train, Y_train, X_test, Y_test)
+        Plotting.plot_lc_curve(X_train, Y_train, title)
+
+
+def select_from_model(X, Y):
+    feature_names = X.columns
+    X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
+    log_regr = Logistic_regression(X_train, Y_train, X_test, Y_test)
+    model = SelectFromModel(log_regr, prefit=True)
+    mask = model.get_support()  # list of booleans
+    new_features = []  # The list of your K best features
+
+    for bool, feature in zip(mask, feature_names):
+        if bool:
+            new_features.append(feature)
+    X_new = pd.DataFrame(data=model.transform(X), columns=new_features)
+    X_train, X_test, Y_train, Y_test = splitting_train_test(X_new, Y)
+    print(" X with selection from model \n" + str(X_new))
+    title = "Learning Curves with Logistic Regression (with select from model)"
+    Plotting.plot_lc_curve(X_train, Y_train, title)
+
 
 if __name__ == '__main__':
     # Dati di input
@@ -96,9 +114,7 @@ if __name__ == '__main__':
     plot_metrics_for_each_features(names_cols, X, "_not_preprocessing")
 
     # plot and save images, with standardizationount_class_0 = 0
-    count_class_1 = 0
-    count_class_2 = 0
-    count_class_3 = 0
+
     plot_metrics_for_each_features(names_cols, X_std, "_standardized")
 
     # plot and save images, with min max scaler
@@ -121,10 +137,11 @@ if __name__ == '__main__':
     )
 
     select_best_feauteres_with_kbest(X, Y)
-    select_from_model(X,Y)
+    #select_from_model(X, Y)
+    # Plotting.plot_lc_curve(X_train, Y_train)
     print("Logistic regression without preprocessing:\n")
-    Logistic_regression(X_train, Y_train, X_test, Y_test)
+    # Logistic_regression(X_train, Y_train, X_test, Y_test)
     print("Logistic regression with Standardization:\n")
-    Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
+    # Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
     print("Logistic regression with Min Max normalization:\n")
-    Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
+    # Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
