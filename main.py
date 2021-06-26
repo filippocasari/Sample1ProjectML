@@ -7,6 +7,7 @@ from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, pr
     precision_recall_curve
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
+from sklearn.tree import DecisionTreeClassifier
 
 import Plotting
 import SVM_classifier
@@ -131,12 +132,47 @@ def discretization_WBC(i):
 
 
 def discretization_RBC(i):
-    if i in range(0, 3000000):
+    if 0 <= i < 3000000:
         i = 0
-    elif i in range(3000000, 5000000):
+    elif 3000000 <= i < 5000000:
         i = 1
-    elif i in range(5000000, 5018451):
+    elif 5018452 > i >= 5000000:
         i = 2
+
+    return i
+
+
+def discretization_Plat(i):
+    if 93013 <= i < 100000:
+        i = 0
+    elif 100000 <= i < 225000:
+        i = 1
+    elif 225000 <= i < 226465:
+        i = 2
+
+    return i
+
+
+def discretization_AST_ALT(i):
+    if 0 <= i < 20:
+        i = 0
+    elif 20 <= i <= 40:
+        i = 1
+    elif 40 < i <= 128:
+        i = 2
+
+    return i
+
+
+def discretization_HGB(df):
+    print(df.loc[df.Gender == 1, 'HGB'])
+
+
+def discretization_RNA(i):
+    if 0 <= i <= 5:
+        i = 0
+    else:
+        i = 1
 
     return i
 
@@ -154,10 +190,31 @@ if __name__ == '__main__':
     # drop della colonna corrispondente al target output
     X = df.drop(columns='Baselinehistological staging')
     X['Age'] = X['Age'].apply(discretization_Age)
+    print("Discretization applied to Age")
     X['BMI'] = X['BMI'].apply(discretization_BMI)
+    print("Discretization applied to BMI")
     X['WBC'] = X['WBC'].apply(discretization_WBC)
+    print("Discretization applied to WBC")
     X['RBC'] = X['RBC'].apply(discretization_RBC)
-    print(X['WBC']+X['RBC'])
+    print("Discretization applied to RBC")
+    X['Plat'] = X['Plat'].apply(discretization_Plat)
+    print("Discretization applied to Plat")
+    X = X.drop(columns='HGB')
+    X['AST 1'] = X['AST 1'].apply(discretization_AST_ALT)
+    X['ALT 1'] = X['ALT 1'].apply(discretization_AST_ALT)
+    X['ALT 4'] = X['ALT 4'].apply(discretization_AST_ALT)
+    X['ALT 12'] = X['ALT 12'].apply(discretization_AST_ALT)
+    X['ALT 24'] = X['ALT 24'].apply(discretization_AST_ALT)
+    X['ALT 36'] = X['ALT 36'].apply(discretization_AST_ALT)
+    X['ALT 48'] = X['ALT 48'].apply(discretization_AST_ALT)
+    X['RNA Base'] = X['RNA Base'].apply(discretization_RNA)
+    X['RNA 4'] = X['RNA 4'].apply(discretization_RNA)
+    X['RNA 12'] = X['RNA 12'].apply(discretization_RNA)
+    X['RNA EOT'] = X['RNA EOT'].apply(discretization_RNA)
+    # discretization_HGB(X) #TODO da rivedere
+    # print("Discretization applied to HGB")
+
+    # print(str(X['WBC']) + str(X['RBC']))
     print("X:\n" + str(X))
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
@@ -226,13 +283,16 @@ if __name__ == '__main__':
         X_scale, Y, random_state=0, train_size=0.70
     )
 
-    # select_best_features_with_kbest(X, Y)
-    select_from_model(X, Y)
+    #select_best_features_with_kbest(X, Y)
+    # select_from_model(X, Y)
     # Plotting.plot_lc_curve(X_train, Y_train)
     print("Logistic regression without preprocessing:\n")
-    # Logistic_regression(X_train, Y_train, X_test, Y_test)
+    Logistic_regression(X_train, Y_train, X_test, Y_test)
     print("Logistic regression with Standardization:\n")
     # Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
     print("Logistic regression with Min Max normalization:\n")
     # Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
-    SVM_classifier.SVM_classifier(X_train, Y_train, X_test, Y_test)
+    # SVM_classifier.SVM_classifier(X_train, Y_train, X_test, Y_test)
+    clf = DecisionTreeClassifier().fit(X_train, Y_train)
+    y_pred = clf.predict(X_test)
+    print(accuracy_score(Y_test, y_pred))
