@@ -1,16 +1,12 @@
 import os
-from pathlib import Path
-
 from scipy.stats import chi2
 from sklearn.feature_selection import SelectFromModel
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
     precision_recall_curve
 from sklearn.model_selection import train_test_split
-from sklearn.svm import LinearSVC
-from sklearn.tree import DecisionTreeClassifier
 
+from sklearn.tree import DecisionTreeClassifier
 import Plotting
-import SVM_classifier
 from Features_Selection import feature_selection_kbest
 import seaborn as sns
 import pandas as pd
@@ -20,7 +16,10 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler, LabelBinarizer, 
 from Logistic_Regression import Logistic_regression
 
 count_features = False
+discretization_bool = True
+is_binarized = True
 
+# TODO used algorithms : Logistic Regression, KNN, NN
 
 def plot_metrics_for_each_features(names_cols, X, name_png):
     figures = []
@@ -45,7 +44,7 @@ def splitting_train_test(X, Y):
     return X_train, X_test, Y_train, Y_test
 
 
-def select_best_features_with_kbest(X, Y):
+def select_best_features_with_kbest_log_regr(X, Y):
     for i in range(3, 28):
         X_new = feature_selection_kbest(X, Y, i)
         X_train, X_test, Y_train, Y_test = splitting_train_test(X_new, Y)
@@ -79,8 +78,7 @@ def analysis_dataset(df):
     plt.figure()
     plt.hist(df['Baselinehistological staging'])
     plt.show()
-    df.plot.scatter(x='RNA EF', y='RNA 12', c='Baselinehistological staging', logx=True, cmap='autumn')
-
+    df.plot.scatter(x='RNA 12', y='RNA EOT', c='Baselinehistological staging', logx=True, logy=True, cmap='autumn')
     plt.show()
 
 
@@ -177,29 +175,12 @@ def discretization_RNA(i):
     return i
 
 
-if __name__ == '__main__':
-    # Dati di input
-    input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
-    df = pd.read_csv(input_file, header=0)
-
-    analysis_dataset(df)
-
-    # df describe, descrive il dataset, inizio EDA
-    print(df.describe())
-    print(df.info())  # mi dice se ci sono tipi come 'object' e se qualche sample è nullo
-    # drop della colonna corrispondente al target output
-    X = df.drop(columns='Baselinehistological staging')
+def Discr_fun(X):
     X['Age'] = X['Age'].apply(discretization_Age)
-    print("Discretization applied to Age")
     X['BMI'] = X['BMI'].apply(discretization_BMI)
-    print("Discretization applied to BMI")
     X['WBC'] = X['WBC'].apply(discretization_WBC)
-    print("Discretization applied to WBC")
     X['RBC'] = X['RBC'].apply(discretization_RBC)
-    print("Discretization applied to RBC")
     X['Plat'] = X['Plat'].apply(discretization_Plat)
-    print("Discretization applied to Plat")
-    X = X.drop(columns='HGB')
     X['AST 1'] = X['AST 1'].apply(discretization_AST_ALT)
     X['ALT 1'] = X['ALT 1'].apply(discretization_AST_ALT)
     X['ALT 4'] = X['ALT 4'].apply(discretization_AST_ALT)
@@ -211,13 +192,11 @@ if __name__ == '__main__':
     X['RNA 4'] = X['RNA 4'].apply(discretization_RNA)
     X['RNA 12'] = X['RNA 12'].apply(discretization_RNA)
     X['RNA EOT'] = X['RNA EOT'].apply(discretization_RNA)
-    # discretization_HGB(X) #TODO da rivedere
-    # print("Discretization applied to HGB")
 
-    # print(str(X['WBC']) + str(X['RBC']))
-    print("X:\n" + str(X))
-    Y = df['Baselinehistological staging']
-    Y = Y.astype(int)  # converto in type int
+    return X
+
+
+def converting_to_0_and_1(X):
     le = LabelEncoder()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
     # i valori variano e possono essere 1 o 2. Li converto in 0 e 1 per maggior praticità
     X['Gender'] = le.fit_transform(X['Gender'])
@@ -228,9 +207,39 @@ if __name__ == '__main__':
     X['Fatigue & generalized bone ache '] = le.fit_transform(X['Fatigue & generalized bone ache '])
     X['Jaundice '] = le.fit_transform(X['Jaundice '])
     X['Epigastric pain '] = le.fit_transform(X['Epigastric pain '])
+
+    return X
+
+
+if __name__ == '__main__':
+    # Dati di input
+    input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
+
+    df = pd.read_csv(input_file, header=0)
+
+    analysis_dataset(df)
+
+    # df describe, descrive il dataset, inizio EDA
+    print(df.describe())
+    print(df.info())  # mi dice se ci sono tipi come 'object' e se qualche sample è nullo
+    # drop della colonna corrispondente al target output
+    X = df.drop(columns='Baselinehistological staging')
+    if discretization_bool:
+        X = Discr_fun(X)
+
+    X = X.drop(columns='HGB')
+    print("X:\n" + str(X))
+    # discretization_HGB(X) #TODO da rivedere
+
+    Y = df['Baselinehistological staging']
+    Y = Y.astype(int)  # converto in type int
+    X = converting_to_0_and_1(X)
+
     # stesso preprocessing per l'array di output
-    Y = le.fit_transform(Y)
-    print("Y:\n" + str(Y))
+    # Y = le.fit_transform(Y)
+
+    df = pd.concat([X, Y], axis=1)
+    print("DF after preprocessing: \n" + str(df))
     if count_features:
         # inizio conteggio per ogni classe, per vedere se è bilanciato
         count_class_0 = 0
@@ -252,7 +261,6 @@ if __name__ == '__main__':
         print("samples of class 1: " + str(count_class_1))
         print("samples of class 2: " + str(count_class_2))
         print("samples of class 3: " + str(count_class_3))
-    # ----------------------------------PREPROCESSING----------------------------------------
 
     names_cols = X.columns  # nomi delle colonne
     scaler = StandardScaler()
@@ -271,8 +279,6 @@ if __name__ == '__main__':
     # plot and save images, with min max scaler
     # plot_metrics_for_each_features(names_cols, X_scale, "min_max_scaler")
 
-    # ------------------------------------END PREPROCESSING-------------------------------------
-
     X_train, X_test, Y_train, Y_test = train_test_split(
         X, Y, random_state=0, train_size=0.70
     )
@@ -283,11 +289,12 @@ if __name__ == '__main__':
         X_scale, Y, random_state=0, train_size=0.70
     )
 
-    #select_best_features_with_kbest(X, Y)
+    # select_best_features_with_kbest_log_regr(X, Y)
     # select_from_model(X, Y)
     # Plotting.plot_lc_curve(X_train, Y_train)
     print("Logistic regression without preprocessing:\n")
-    Logistic_regression(X_train, Y_train, X_test, Y_test)
+
+    # Logistic_regression(X_train, Y_train, X_test, Y_test, is_binarized)
     print("Logistic regression with Standardization:\n")
     # Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
     print("Logistic regression with Min Max normalization:\n")
