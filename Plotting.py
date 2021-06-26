@@ -4,31 +4,28 @@ from sklearn.model_selection import learning_curve
 from sklearn.linear_model import LogisticRegression
 
 
-def plot_lc_curve(X, Y, title, i):
-
+def plot_lc_curve(X, Y, title, i=None):
     # Cross validation with 100 iterations to get smoother mean test and train
     # score curves, each time with 20% data randomly selected as a validation set.
 
     estimator = LogisticRegression(class_weight='balanced', multi_class='multinomial',
                                    max_iter=10000, solver='saga')
-    plot_learning_curve(estimator, title+" \nnum of k: "+str(i), X, Y, ylim=(0.01, 0.6), n_jobs=4)
+    if i != None:
+        title = title + " \nnum of k: " + str(i)
+    plot_learning_curve(estimator, title, X, Y, ylim=(0.01, 0.6), n_jobs=-1)
 
     plt.show()
-
-
-
-
 
 
 def plot_metrics_results(y_test, y_predicted, models_name):
     print('/-------------------------------------------------------------------------------------------------------- /')
     print('RESULTS OF THE %s CLASSIFIER' % models_name)
     print('/-------------------------------------------------------------------------------------------------------- /')
-    print('Accuracy is ', accuracy_score(y_test, y_predicted,sample_weight='weighted'))
+    print('Accuracy is ', accuracy_score(y_test, y_predicted, sample_weight='weighted'))
     print('Precision is ', precision_score(y_test, y_predicted, sample_weight='weighted'))
-    print('Recall is ', recall_score(y_test, y_predicted,sample_weight='weighted'))
-    print('F0-Score is ', f1_score(y_test, y_predicted,sample_weight='weighted'))
-    print('AUC is ', roc_auc_score(y_test, y_predicted,sample_weight='weighted'))
+    print('Recall is ', recall_score(y_test, y_predicted, sample_weight='weighted'))
+    print('F0-Score is ', f1_score(y_test, y_predicted, sample_weight='weighted'))
+    print('AUC is ', roc_auc_score(y_test, y_predicted, sample_weight='weighted'))
 
     fpr, tpr, _ = roc_curve(y_test, y_predicted)
     plt.figure('ROC')
@@ -52,7 +49,6 @@ def plot_metrics_results(y_test, y_predicted, models_name):
     plt.xlim([-1.0, 1.0])
 
     plt.show()
-
 
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,

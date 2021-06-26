@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, StandardScaler, LabelBinarizer, MinMaxScaler
 from Logistic_Regression import Logistic_regression
 
-count_features=False
+count_features = False
 
 
 def plot_metrics_for_each_features(names_cols, X, name_png):
@@ -59,7 +59,7 @@ def select_best_features_with_kbest(X, Y):
 def select_from_model(X, Y):
     feature_names = X.columns
     X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
-    log_regr = Logistic_regression(X_train, Y_train, X_test, Y_test)
+    log_regr, accuracy, y_pred = Logistic_regression(X_train, Y_train, X_test, Y_test)
     model = SelectFromModel(log_regr, prefit=True)
     mask = model.get_support()  # list of booleans
     new_features = []  # The list of your K best features
@@ -74,16 +74,90 @@ def select_from_model(X, Y):
     Plotting.plot_lc_curve(X_train, Y_train, title)
 
 
+def analysis_dataset(df):
+    plt.figure()
+    plt.hist(df['Baselinehistological staging'])
+    plt.show()
+    df.plot.scatter(x='RNA EF', y='RNA 12', c='Baselinehistological staging', logx=True, cmap='autumn')
+
+    plt.show()
+
+
+def discretization_Age(i):
+    if i in range(0, 33):
+        i = 0
+    elif i in range(33, 38):
+        i = 1
+    elif i in range(38, 43):
+        i = 2
+    elif i in range(43, 48):
+        i = 3
+    elif i in range(48, 53):
+        i = 4
+    elif i in range(53, 58):
+        i = 5
+    else:
+        i = 6
+
+    return i
+
+
+def discretization_BMI(i):
+    if i in range(0, 18):
+        i = 0
+    elif i in range(18, 25):
+        i = 1
+    elif i in range(25, 30):
+        i = 2
+    elif i in range(30, 35):
+        i = 3
+    elif i in range(35, 40):
+        i = 4
+    elif i in range(53, 58):
+        i = 5
+
+    return i
+
+
+def discretization_WBC(i):
+    if i in range(0, 4000):
+        i = 0
+    elif i in range(4000, 11000):
+        i = 1
+    elif i in range(11000, 12102):
+        i = 2
+
+    return i
+
+
+def discretization_RBC(i):
+    if i in range(0, 3000000):
+        i = 0
+    elif i in range(3000000, 5000000):
+        i = 1
+    elif i in range(5000000, 5018451):
+        i = 2
+
+    return i
+
+
 if __name__ == '__main__':
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
+
+    analysis_dataset(df)
 
     # df describe, descrive il dataset, inizio EDA
     print(df.describe())
     print(df.info())  # mi dice se ci sono tipi come 'object' e se qualche sample è nullo
     # drop della colonna corrispondente al target output
     X = df.drop(columns='Baselinehistological staging')
+    X['Age'] = X['Age'].apply(discretization_Age)
+    X['BMI'] = X['BMI'].apply(discretization_BMI)
+    X['WBC'] = X['WBC'].apply(discretization_WBC)
+    X['RBC'] = X['RBC'].apply(discretization_RBC)
+    print(X['WBC']+X['RBC'])
     print("X:\n" + str(X))
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
@@ -129,17 +203,16 @@ if __name__ == '__main__':
 
     min_max_scaler = MinMaxScaler()
     X_scale = pd.DataFrame(min_max_scaler.fit_transform(X[names_cols]), columns=names_cols)
-    #print(names_cols + "\n" + str(len(names_cols)))
+    # print(names_cols + "\n" + str(len(names_cols)))
     # plot and save images, not preprocessing
-    plot_metrics_for_each_features(names_cols, X, "_not_preprocessing")
+    # plot_metrics_for_each_features(names_cols, X, "_not_preprocessing")
 
     # plot and save images, with standardizationount_class_0 = 0
 
-    plot_metrics_for_each_features(names_cols, X_std, "_standardized")
+    # plot_metrics_for_each_features(names_cols, X_std, "_standardized")
 
     # plot and save images, with min max scaler
-    plot_metrics_for_each_features(names_cols, X_scale, "min_max_scaler")
-
+    # plot_metrics_for_each_features(names_cols, X_scale, "min_max_scaler")
 
     # ------------------------------------END PREPROCESSING-------------------------------------
 
@@ -153,8 +226,8 @@ if __name__ == '__main__':
         X_scale, Y, random_state=0, train_size=0.70
     )
 
-    #select_best_features_with_kbest(X, Y)
-    # select_from_model(X, Y)
+    # select_best_features_with_kbest(X, Y)
+    select_from_model(X, Y)
     # Plotting.plot_lc_curve(X_train, Y_train)
     print("Logistic regression without preprocessing:\n")
     # Logistic_regression(X_train, Y_train, X_test, Y_test)
@@ -162,4 +235,4 @@ if __name__ == '__main__':
     # Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
     print("Logistic regression with Min Max normalization:\n")
     # Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
-    SVM_classifier.SVM_classifier(X_train, Y_train,X_test, Y_test)
+    SVM_classifier.SVM_classifier(X_train, Y_train, X_test, Y_test)
