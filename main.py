@@ -19,6 +19,7 @@ count_features = False
 discretization_bool = True
 is_binarized = True
 
+
 # TODO used algorithms : Logistic Regression, KNN, NN
 
 def plot_metrics_for_each_features(names_cols, X, name_png):
@@ -211,6 +212,39 @@ def converting_to_0_and_1(X):
     return X
 
 
+def counting_features(Y):
+    if count_features:
+        # inizio conteggio per ogni classe, per vedere se è bilanciato
+        count_class_0 = 0
+        count_class_1 = 0
+        count_class_2 = 0
+        count_class_3 = 0
+
+        for i in Y:
+            # print(i)
+            if i == 0:
+                count_class_0 += 1
+            if i == 1:
+                count_class_1 += 1
+            if i == 2:
+                count_class_2 += 1
+            if i == 3:
+                count_class_3 += 1
+        print("samples of class 0: " + str(count_class_0))
+        print("samples of class 1: " + str(count_class_1))
+        print("samples of class 2: " + str(count_class_2))
+        print("samples of class 3: " + str(count_class_3))
+
+
+def normalization_and_standardization(X):
+    scaler = StandardScaler()
+    min_max_scaler = MinMaxScaler()
+    names_cols = X.columns  # nomi delle colonne
+    X_std = pd.DataFrame(scaler.fit_transform(X[names_cols]), columns=names_cols)
+    X_scale = pd.DataFrame(min_max_scaler.fit_transform(X[names_cols]), columns=names_cols)
+    return X_std, X_scale
+
+
 if __name__ == '__main__':
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
@@ -240,34 +274,8 @@ if __name__ == '__main__':
 
     df = pd.concat([X, Y], axis=1)
     print("DF after preprocessing: \n" + str(df))
-    if count_features:
-        # inizio conteggio per ogni classe, per vedere se è bilanciato
-        count_class_0 = 0
-        count_class_1 = 0
-        count_class_2 = 0
-        count_class_3 = 0
-
-        for i in Y:
-            # print(i)
-            if i == 0:
-                count_class_0 += 1
-            if i == 1:
-                count_class_1 += 1
-            if i == 2:
-                count_class_2 += 1
-            if i == 3:
-                count_class_3 += 1
-        print("samples of class 0: " + str(count_class_0))
-        print("samples of class 1: " + str(count_class_1))
-        print("samples of class 2: " + str(count_class_2))
-        print("samples of class 3: " + str(count_class_3))
-
-    names_cols = X.columns  # nomi delle colonne
-    scaler = StandardScaler()
-    X_std = pd.DataFrame(scaler.fit_transform(X[names_cols]), columns=names_cols)
-
-    min_max_scaler = MinMaxScaler()
-    X_scale = pd.DataFrame(min_max_scaler.fit_transform(X[names_cols]), columns=names_cols)
+    counting_features(Y)  # conto le features
+    X_std, X_min_max = normalization_and_standardization(X)
     # print(names_cols + "\n" + str(len(names_cols)))
     # plot and save images, not preprocessing
     # plot_metrics_for_each_features(names_cols, X, "_not_preprocessing")
@@ -286,7 +294,7 @@ if __name__ == '__main__':
         X_std, Y, random_state=0, train_size=0.70
     )
     X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
-        X_scale, Y, random_state=0, train_size=0.70
+        X_min_max, Y, random_state=0, train_size=0.70
     )
 
     # select_best_features_with_kbest_log_regr(X, Y)
