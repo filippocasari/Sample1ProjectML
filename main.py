@@ -1,9 +1,11 @@
 import os
 from scipy.stats import chi2
 from sklearn.feature_selection import SelectFromModel
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
     precision_recall_curve
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 
 from sklearn.tree import DecisionTreeClassifier
 import Plotting
@@ -17,7 +19,8 @@ from Logistic_Regression import Logistic_regression
 
 count_features = False
 discretization_bool = True
-is_binarized = True
+problem_is_binarized = False
+normal_and_std = True
 
 
 # TODO used algorithms : Logistic Regression, KNN, NN
@@ -57,11 +60,11 @@ def select_best_features_with_kbest_log_regr(X, Y):
         # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
 
 
-def select_from_model(X, Y):
+def select_from_model(X, Y, clf):
     feature_names = X.columns
     X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
-    log_regr, accuracy, y_pred = Logistic_regression(X_train, Y_train, X_test, Y_test)
-    model = SelectFromModel(log_regr, prefit=True)
+
+    model = SelectFromModel(clf, prefit=True)
     mask = model.get_support()  # list of booleans
     new_features = []  # The list of your K best features
 
@@ -73,6 +76,7 @@ def select_from_model(X, Y):
     print(" X with selection from model \n" + str(X_new))
     title = "Learning Curves with Logistic Regression (with select from model)"
     Plotting.plot_lc_curve(X_train, Y_train, title)
+    return X_new
 
 
 def analysis_dataset(df):
@@ -245,6 +249,14 @@ def normalization_and_standardization(X):
     return X_std, X_scale
 
 
+def binarizing_problem(i):
+    if i == 1 or i == 2:
+        i = 0
+    if i == 3 or i == 4:
+        i = 1
+    return i
+
+
 if __name__ == '__main__':
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
@@ -262,6 +274,7 @@ if __name__ == '__main__':
         X = Discr_fun(X)
 
     X = X.drop(columns='HGB')
+    name_columns = X.columns
     print("X:\n" + str(X))
     # discretization_HGB(X) #TODO da rivedere
 
@@ -275,6 +288,7 @@ if __name__ == '__main__':
     df = pd.concat([X, Y], axis=1)
     print("DF after preprocessing: \n" + str(df))
     counting_features(Y)  # conto le features
+
     X_std, X_min_max = normalization_and_standardization(X)
     # print(names_cols + "\n" + str(len(names_cols)))
     # plot and save images, not preprocessing
@@ -287,15 +301,22 @@ if __name__ == '__main__':
     # plot and save images, with min max scaler
     # plot_metrics_for_each_features(names_cols, X_scale, "min_max_scaler")
 
+    if problem_is_binarized:
+        Y = Y.apply(binarizing_problem)
+
     X_train, X_test, Y_train, Y_test = train_test_split(
         X, Y, random_state=0, train_size=0.70
     )
-    X_train_std, X_test_std, Y_train, Y_test = train_test_split(
-        X_std, Y, random_state=0, train_size=0.70
-    )
-    X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
-        X_min_max, Y, random_state=0, train_size=0.70
-    )
+    if normal_and_std:
+        print("Logistic regression with Standardization:\n")
+        X_train_std, X_test_std, Y_train, Y_test = train_test_split(
+            X_std, Y, random_state=0, train_size=0.70
+        )
+        print("Logistic regression with Min Max normalization:\n")
+
+        X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
+            X_min_max, Y, random_state=0, train_size=0.70
+        )
 
     # select_best_features_with_kbest_log_regr(X, Y)
     # select_from_model(X, Y)
@@ -303,11 +324,19 @@ if __name__ == '__main__':
     print("Logistic regression without preprocessing:\n")
 
     # Logistic_regression(X_train, Y_train, X_test, Y_test, is_binarized)
-    print("Logistic regression with Standardization:\n")
+
     # Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
-    print("Logistic regression with Min Max normalization:\n")
+
     # Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
     # SVM_classifier.SVM_classifier(X_train, Y_train, X_test, Y_test)
-    clf = DecisionTreeClassifier().fit(X_train, Y_train)
+
+    clf = Pipeline(
+        [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
+         ('classification', DecisionTreeClassifier())])
+    clf.fit(X_train, Y_train)
+
+
     y_pred = clf.predict(X_test)
     print(accuracy_score(Y_test, y_pred))
+    select_from_model(X, Y, clf)
+
