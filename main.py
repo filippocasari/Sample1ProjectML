@@ -80,10 +80,23 @@ def select_from_model(X, Y, clf):
 
 
 def analysis_dataset(df):
-    plt.figure()
-    plt.hist(df['Baselinehistological staging'])
+    # EDA starting...
+    print(df)
+    # df = discr_fun(df)
+
+    #plt.hist(df['Baselinehistological staging'])
+
+
+    # show the balanced dataset
+    sns.displot(data=df['Baselinehistological staging'])
     plt.show()
-    df.plot.scatter(x='RNA 12', y='RNA EOT', c='Baselinehistological staging', logx=True, logy=True, cmap='autumn')
+
+    df.plot.scatter(x='RNA 12', y='RNA EOT', c='Baselinehistological staging', logy=True, cmap='autumn')
+    plt.show()
+    print(pd.crosstab(df['RNA 12'], df['Baselinehistological staging'], margins=True))
+    sns.countplot(x='RNA 12', hue='RNA EOT', data=df)
+    plt.show()
+    sns.boxplot(x='RNA EF', data=df)
     plt.show()
 
 
@@ -174,13 +187,13 @@ def discretization_HGB(df):
 def discretization_RNA(i):
     if 0 <= i <= 5:
         i = 0
-    else:
+    elif i > 5:
         i = 1
 
     return i
 
 
-def Discr_fun(X):
+def discr_fun(X):
     X['Age'] = X['Age'].apply(discretization_Age)
     X['BMI'] = X['BMI'].apply(discretization_BMI)
     X['WBC'] = X['WBC'].apply(discretization_WBC)
@@ -258,29 +271,27 @@ def binarizing_problem(i):
 
 
 if __name__ == '__main__':
+
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
-
     df = pd.read_csv(input_file, header=0)
-
     analysis_dataset(df)
-
     # df describe, descrive il dataset, inizio EDA
-    print(df.describe())
-    print(df.info())  # mi dice se ci sono tipi come 'object' e se qualche sample è nullo
-    # drop della colonna corrispondente al target output
+
     X = df.drop(columns='Baselinehistological staging')
     if discretization_bool:
-        X = Discr_fun(X)
+        X = discr_fun(X)
+
+    Y = df['Baselinehistological staging']
+    Y = Y.astype(int)  # converto in type int
+    X = converting_to_0_and_1(X)
+
+
 
     X = X.drop(columns='HGB')
     name_columns = X.columns
     print("X:\n" + str(X))
     # discretization_HGB(X) #TODO da rivedere
-
-    Y = df['Baselinehistological staging']
-    Y = Y.astype(int)  # converto in type int
-    X = converting_to_0_and_1(X)
 
     # stesso preprocessing per l'array di output
     # Y = le.fit_transform(Y)
@@ -335,8 +346,6 @@ if __name__ == '__main__':
          ('classification', DecisionTreeClassifier())])
     clf.fit(X_train, Y_train)
 
-
     y_pred = clf.predict(X_test)
     print(accuracy_score(Y_test, y_pred))
     select_from_model(X, Y, clf)
-
