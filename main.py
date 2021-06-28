@@ -112,7 +112,7 @@ def analysis_dataset(df):
     plt.close()
 
 
-def clustering(X):
+def clustering(X, title):
     inertia = []  # Squared Distance between Centroids and data points
     for n in range(1, 11):
         algorithm = (KMeans(n_clusters=n, init='k-means++', n_init=10, random_state=111,
@@ -124,6 +124,7 @@ def clustering(X):
     plt.plot(np.arange(1, 11), inertia, 'o')
     plt.plot(np.arange(1, 11), inertia, '-', alpha=0.5)
     plt.xlabel('Number of Clusters'), plt.ylabel('Inertia')
+    plt.title(title)
     plt.show()
     algorithm_final = KMeans(n_clusters=4, init='k-means++', n_init=10, max_iter=300, tol=0.0001, random_state=111,
                              algorithm='elkan')
@@ -140,7 +141,7 @@ def clustering(X):
     ax.set_xlabel('Age')
     ax.set_ylabel('RNA EOT')
     ax.set_zlabel('RNA EF')
-    plt.title('Clusters')
+    plt.title('Clusters '+title)
 
     plt.show()
 
@@ -427,8 +428,9 @@ if __name__ == '__main__':
         y_pred_1 = clf_DT.predict(X_test)
         y_pred_2 = clf_KNN.predict(X_test)
 
-    clustering(X)
-    clustering(X_not_discret)
+    if discretization_bool:
+        clustering(X, "with data not continues")
+    clustering(X_not_discret, "with data continues")
     # clustering(X_train)
     # clustering(X_test)
     # sns.displot(data=Y_test, x=Y_test.classes_)
