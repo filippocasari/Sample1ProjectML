@@ -112,17 +112,36 @@ def analysis_dataset(df):
     plt.close()
 
 
-def clustering(x_train):
+def clustering(X):
     inertia = []  # Squared Distance between Centroids and data points
     for n in range(1, 11):
-        algorithm = (KMeans(n_clusters=n, init='k-means++', n_init=10, max_iter=300, tol=0.0001, random_state=111,
+        algorithm = (KMeans(n_clusters=n, init='k-means++', n_init=10, random_state=111,
                             algorithm='elkan'))
-        algorithm.fit(x_train)
+        algorithm.fit(X)
         inertia.append(algorithm.inertia_)
-    plt.figure(1, figsize=(15, 6))
+
+    plt.figure()
     plt.plot(np.arange(1, 11), inertia, 'o')
     plt.plot(np.arange(1, 11), inertia, '-', alpha=0.5)
     plt.xlabel('Number of Clusters'), plt.ylabel('Inertia')
+    plt.show()
+    algorithm_final = KMeans(n_clusters=4, init='k-means++', n_init=10, max_iter=300, tol=0.0001, random_state=111,
+                             algorithm='elkan')
+
+    X3 = X[['Age', 'RNA EOT', 'RNA EF']].iloc[:, :].values
+    fig = plt.figure()
+    algorithm_final.fit(X3)
+    labels4 = algorithm_final.labels_
+    # print(labels3)
+    X['label4'] = labels4
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(xs=X['Age'], ys=X['RNA EOT'], zs=X['RNA EF'], marker='o', s=300,
+               c=X['label4'])
+    ax.set_xlabel('Age')
+    ax.set_ylabel('RNA EOT')
+    ax.set_zlabel('RNA EF')
+    plt.title('Clusters')
+
     plt.show()
 
 
@@ -236,6 +255,7 @@ def discr_fun(X):
     X['RNA 4'] = X['RNA 4'].apply(discretization_RNA)
     X['RNA 12'] = X['RNA 12'].apply(discretization_RNA)
     X['RNA EOT'] = X['RNA EOT'].apply(discretization_RNA)
+    X['RNA EF'] = X[R'RNA EF'].apply(discretization_RNA)
 
     return X
 
@@ -312,6 +332,7 @@ if __name__ == '__main__':
     # df describe, descrive il dataset, inizio EDA
 
     X = df.drop(columns='Baselinehistological staging')
+    X_not_discret = X.copy()
     if discretization_bool:
         X = discr_fun(X)
 
@@ -382,7 +403,7 @@ if __name__ == '__main__':
         X_train_std, X_test_std, Y_train, Y_test = train_test_split(
             X_std, Y, random_state=0, train_size=0.70
         )
-        clustering(X_train_std)
+
         clf_DT.fit(X_train_std, Y_train)
         clf_KNN.fit(X_train_std, Y_train)
         y_pred_1 = clf_DT.predict(X_test_std)
@@ -394,18 +415,22 @@ if __name__ == '__main__':
         X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
             X_min_max, Y, random_state=0, train_size=0.70
         )
-        clustering(X_train_minmax)
+
         clf_DT.fit(X_train_minmax, Y_train)
         clf_KNN.fit(X_train_minmax, Y_train)
         y_pred_1 = clf_DT.predict(X_test_minmax)
         y_pred_2 = clf_KNN.predict(X_test_minmax)
     else:
-        clustering(X_train)  # analisi bontà del clustering
+        # analisi bontà del clustering
         clf_DT.fit(X_train, Y_train)
         clf_KNN.fit(X_train, Y_train)
         y_pred_1 = clf_DT.predict(X_test)
         y_pred_2 = clf_KNN.predict(X_test)
 
+    clustering(X)
+    clustering(X_not_discret)
+    # clustering(X_train)
+    # clustering(X_test)
     # sns.displot(data=Y_test, x=Y_test.classes_)
     # plt.show()
     print("Preprocessing applied? " + str(preproc))
