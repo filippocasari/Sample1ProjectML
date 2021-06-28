@@ -330,8 +330,19 @@ if __name__ == '__main__':
     df = pd.concat([X, Y], axis=1)
     print("DF after preprocessing: \n" + str(df))
     counting_features(Y)  # conto le features
+    corr_df = df.corr()
+    print("The correlation DataFrame is:")
+    print(corr_df, "\n")
 
+    # list_corr=corr_df.abs().nlargest(28, Y)['Baselinehistological staging'].index
+    plt.figure(figsize=(40, 30))
+    matrix = np.triu(corr_df, k=1)
+    sns.heatmap(corr_df, annot=True, cmap='coolwarm', square=True, linewidth=0.1, mask=matrix)
+    plt.show()
     X_std, X_min_max = normalization_and_standardization(X)
+
+    # TODO countplot, displot, pieplot, barplot, violin plot, pairplot
+
     # print(names_cols + "\n" + str(len(names_cols)))
     # plot and save images, not preprocessing
     # plot_metrics_for_each_features(names_cols, X, "_not_preprocessing")
