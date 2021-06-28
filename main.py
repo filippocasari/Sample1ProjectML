@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
     precision_recall_curve, classification_report
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
@@ -349,51 +350,61 @@ if __name__ == '__main__':
         X, Y, random_state=0, train_size=0.70
     )
 
+    # -----------------------Feature Selection---------------------------------
+    if problem_is_binarized:
+        clf_DT = Pipeline(
+            [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
+             ('classification', DecisionTreeClassifier(random_state=0))])
+        clf_KNN = KNeighborsClassifier()
+    else:
+
+        clf_DT = Pipeline(
+            [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
+             ('classification', DecisionTreeClassifier(random_state=0))])
+        clf_KNN = KNeighborsClassifier()
+
+    # --------------------------------END FEATURES SELCTION--------------------------------
+
     if standardization:
         normalization = False
         X_train_std, X_test_std, Y_train, Y_test = train_test_split(
             X_std, Y, random_state=0, train_size=0.70
         )
+        clustering(X_train_std)
+        clf_DT.fit(X_train_std, Y_train)
+        clf_KNN.fit(X_train_std, Y_train)
+        y_pred_1 = clf_DT.predict(X_test_std)
+        y_pred_2 = clf_KNN.predict(X_test_std)
 
-    if normalization:
+    elif normalization:
         standardization = False
+
         X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
             X_min_max, Y, random_state=0, train_size=0.70
         )
+        clustering(X_train_minmax)
+        clf_DT.fit(X_train_minmax, Y_train)
+        clf_KNN.fit(X_train_minmax, Y_train)
+        y_pred_1 = clf_DT.predict(X_test_minmax)
+        y_pred_2 = clf_KNN.predict(X_test_minmax)
+    else:
+        clustering(X_train)  # analisi bontà del clustering
+        clf_DT.fit(X_train, Y_train)
+        clf_KNN.fit(X_train, Y_train)
+        y_pred_1 = clf_DT.predict(X_test)
+        y_pred_2 = clf_KNN.predict(X_test)
 
-    # select_best_features_with_kbest_log_regr(X, Y)
-    # select_from_model(X, Y)
-    # Plotting.plot_lc_curve(X_train, Y_train)
-    print("Logistic regression without preprocessing:\n")
-
-    # Logistic_regression(X_train, Y_train, X_test, Y_test, is_binarized)
-
-    # Logistic_regression(X_train_std, Y_train, X_test_std, Y_test)
-
-    # Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
-    # SVM_classifier.SVM_classifier(X_train, Y_train, X_test, Y_test)
-    # -----------------------Feature Selection---------------------------------
-    clf_DT = Pipeline(
-        [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
-         ('classification', DecisionTreeClassifier(random_state=0))])
-    clf_LR = Pipeline([('feature_selection', SelectFromModel(LogisticRegression())),
-                       ('classification',
-                        LogisticRegression(random_state=0, class_weight='balanced', multi_class='multinomial',
-                                           solver='saga'))])
-    clf_DT.fit(X_train, Y_train)
-    clf_LR.fit(X_train, Y_train)
-    y_pred_1 = clf_DT.predict(X_test)
-    y_pred_2 = clf_LR.predict(X_test)
-    # --------------------------------END FEATURES SELCTION--------------------------------
-    clustering(X_train)  # analisi bontà del clustering
-
+    # sns.displot(data=Y_test, x=Y_test.classes_)
+    # plt.show()
     print("Preprocessing apllied? " + str(preproc))
     print("Analysis with Discretization: " + str(discretization_bool))
     print("Problem is Binarized ?: " + str(problem_is_binarized))
     print("Standardization applied ? : " + str(standardization))
     print("Normalization applied? : " + str(normalization))
 
-    print("accuracy score for Logistic Regression: " + str(accuracy_score(Y_test, y_pred_2)))
+    print("accuracy score for KNeighbors: " + str(accuracy_score(Y_test, y_pred_2)))
     print("accuracy score for Decision tree: " + str(accuracy_score(Y_test, y_pred_1)))
+    print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_pred_2)))
+    print("classification report for Decision tree:\n " + str(classification_report(Y_test, y_pred_1)))
 
     # select_from_model(X, Y, clf)
