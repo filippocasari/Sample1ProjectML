@@ -20,7 +20,7 @@ from Logistic_Regression import Logistic_regression
 count_features = False
 discretization_bool = True
 problem_is_binarized = False
-normal_and_std = True
+normal_and_std = False
 
 
 # TODO used algorithms : Logistic Regression, KNN, NN
@@ -91,6 +91,8 @@ def analysis_dataset(df):
     sns.displot(data=df['Baselinehistological staging'])
     plt.show()
 
+    df.plot.scatter(x='RNA 12', y='RNA EF', c='Baselinehistological staging', logy=True, cmap='summer')
+    plt.show()
     df.plot.scatter(x='RNA 12', y='RNA EOT', c='Baselinehistological staging', logy=True, cmap='autumn')
     plt.show()
     print(pd.crosstab(df['RNA 12'], df['Baselinehistological staging'], margins=True))
