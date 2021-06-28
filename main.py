@@ -1,11 +1,16 @@
 import os
+
+import numpy as np
 from scipy.stats import chi2
+from sklearn import cluster
+from sklearn.cluster import KMeans
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
-    precision_recall_curve
+    precision_recall_curve, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
 
 from sklearn.tree import DecisionTreeClassifier
 import Plotting
@@ -16,14 +21,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, StandardScaler, LabelBinarizer, MinMaxScaler
 from Logistic_Regression import Logistic_regression
+from SVM_classifier import SVM_classifier
 
 count_features = False
 discretization_bool = True
 problem_is_binarized = False
-normal_and_std = False
+normalization = False
+standardization = False
+preproc = True
 
 
-# TODO used algorithms : Logistic Regression, KNN, NN
+# used algorithms : Logistic Regression, DecisionTree, Clustering (K-means for evaluate number of classes)
+
 
 def plot_metrics_for_each_features(names_cols, X, name_png):
     figures = []
@@ -84,8 +93,7 @@ def analysis_dataset(df):
     print(df)
     # df = discr_fun(df)
 
-    #plt.hist(df['Baselinehistological staging'])
-
+    # plt.hist(df['Baselinehistological staging'])
 
     # show the balanced dataset
     sns.displot(data=df['Baselinehistological staging'])
@@ -99,6 +107,21 @@ def analysis_dataset(df):
     sns.countplot(x='RNA 12', hue='RNA EOT', data=df)
     plt.show()
     sns.boxplot(x='RNA EF', data=df)
+    plt.show()
+    plt.close()
+
+
+def clustering(x_train):
+    inertia = []  # Squared Distance between Centroids and data points
+    for n in range(1, 11):
+        algorithm = (KMeans(n_clusters=n, init='k-means++', n_init=10, max_iter=300, tol=0.0001, random_state=111,
+                            algorithm='elkan'))
+        algorithm.fit(x_train)
+        inertia.append(algorithm.inertia_)
+    plt.figure(1, figsize=(15, 6))
+    plt.plot(np.arange(1, 11), inertia, 'o')
+    plt.plot(np.arange(1, 11), inertia, '-', alpha=0.5)
+    plt.xlabel('Number of Clusters'), plt.ylabel('Inertia')
     plt.show()
 
 
@@ -272,12 +295,19 @@ def binarizing_problem(i):
     return i
 
 
+def label_encoding(i_y):
+    i_y = i_y - 1
+    return i_y
+
+
 if __name__ == '__main__':
 
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
-    analysis_dataset(df)
+    print("Starting EDA...")
+    # analysis_dataset(df)
+    print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
 
     X = df.drop(columns='Baselinehistological staging')
@@ -287,8 +317,6 @@ if __name__ == '__main__':
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
     X = converting_to_0_and_1(X)
-
-
 
     X = X.drop(columns='HGB')
     name_columns = X.columns
@@ -320,13 +348,15 @@ if __name__ == '__main__':
     X_train, X_test, Y_train, Y_test = train_test_split(
         X, Y, random_state=0, train_size=0.70
     )
-    if normal_and_std:
-        print("Logistic regression with Standardization:\n")
+
+    if standardization:
+        normalization = False
         X_train_std, X_test_std, Y_train, Y_test = train_test_split(
             X_std, Y, random_state=0, train_size=0.70
         )
-        print("Logistic regression with Min Max normalization:\n")
 
+    if normalization:
+        standardization = False
         X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
             X_min_max, Y, random_state=0, train_size=0.70
         )
@@ -342,12 +372,28 @@ if __name__ == '__main__':
 
     # Logistic_regression(X_train_minmax, Y_train, X_test_minmax, Y_test)
     # SVM_classifier.SVM_classifier(X_train, Y_train, X_test, Y_test)
-
-    clf = Pipeline(
+    # -----------------------Feature Selection---------------------------------
+    clf_DT = Pipeline(
         [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
-         ('classification', DecisionTreeClassifier())])
-    clf.fit(X_train, Y_train)
+         ('classification', DecisionTreeClassifier(random_state=0))])
+    clf_LR = Pipeline([('feature_selection', SelectFromModel(LogisticRegression())),
+                       ('classification',
+                        LogisticRegression(random_state=0, class_weight='balanced', multi_class='multinomial',
+                                           solver='saga'))])
+    clf_DT.fit(X_train, Y_train)
+    clf_LR.fit(X_train, Y_train)
+    y_pred_1 = clf_DT.predict(X_test)
+    y_pred_2 = clf_LR.predict(X_test)
+    # --------------------------------END FEATURES SELCTION--------------------------------
+    clustering(X_train)  # analisi bontà del clustering
 
-    y_pred = clf.predict(X_test)
-    print(accuracy_score(Y_test, y_pred))
-    select_from_model(X, Y, clf)
+    print("Preprocessing apllied? " + str(preproc))
+    print("Analysis with Discretization: " + str(discretization_bool))
+    print("Problem is Binarized ?: " + str(problem_is_binarized))
+    print("Standardization applied ? : " + str(standardization))
+    print("Normalization applied? : " + str(normalization))
+
+    print("accuracy score for Logistic Regression: " + str(accuracy_score(Y_test, y_pred_2)))
+    print("accuracy score for Decision tree: " + str(accuracy_score(Y_test, y_pred_1)))
+
+    # select_from_model(X, Y, clf)
