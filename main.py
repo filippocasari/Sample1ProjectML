@@ -322,7 +322,7 @@ if __name__ == '__main__':
     X = X.drop(columns='HGB')
     name_columns = X.columns
     print("X:\n" + str(X))
-    # discretization_HGB(X) #TODO da rivedere
+    # discretization_HGB(X) # TODO da rivedere
 
     # stesso preprocessing per l'array di output
     # Y = le.fit_transform(Y)
@@ -342,6 +342,7 @@ if __name__ == '__main__':
     X_std, X_min_max = normalization_and_standardization(X)
 
     # TODO countplot, displot, pieplot, barplot, violin plot, pairplot
+    # countplot ==> mette a confronto della classe target, feature più rilevante
 
     # print(names_cols + "\n" + str(len(names_cols)))
     # plot and save images, not preprocessing
@@ -407,7 +408,7 @@ if __name__ == '__main__':
 
     # sns.displot(data=Y_test, x=Y_test.classes_)
     # plt.show()
-    print("Preprocessing apllied? " + str(preproc))
+    print("Preprocessing applied? " + str(preproc))
     print("Analysis with Discretization: " + str(discretization_bool))
     print("Problem is Binarized ?: " + str(problem_is_binarized))
     print("Standardization applied ? : " + str(standardization))
