@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from sklearn.cluster import KMeans
-from sklearn.feature_selection import SelectFromModel
+from sklearn.feature_selection import SelectFromModel, SelectKBest
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
     precision_recall_curve, classification_report
@@ -58,22 +58,25 @@ def splitting_train_test(X, Y):
     return X_train, X_test, Y_train, Y_test
 
 
-def select_best_features_with_kbest_log_regr(X, Y):
+def select_best_features_with_kbest(X, Y, title):
+    X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
     for i in range(3, 28):
-        X_new = feature_selection_kbest(X, Y, i)
-        X_train, X_test, Y_train, Y_test = splitting_train_test(X_new, Y)
-        title = "Learning Curves with Logistic Regression (with select from model)"
-        log_regr, accuracy_score, y_pred = Logistic_regression(X_train, Y_train, X_test, Y_test)
+
+
+
+
+        title = "Learning Curves with "+title
+        X_new = SelectKBest(k= i).fit_transform(X_train, Y_train)
 
         Plotting.plot_lc_curve(X_train, Y_train, title, i)
 
         # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
 
 
-def select_from_model(X, Y, clf):
+def select_from_model(X, Y, clf, title):
     feature_names = X.columns
     X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
-
+    clf.fit(X_train, Y_train)
     model = SelectFromModel(clf, prefit=True)
     mask = model.get_support()  # list of booleans
     new_features = []  # The list of your K best features
@@ -84,42 +87,9 @@ def select_from_model(X, Y, clf):
     X_new = pd.DataFrame(data=model.transform(X), columns=new_features)
     X_train, X_test, Y_train, Y_test = splitting_train_test(X_new, Y)
     print(" X with selection from model \n" + str(X_new))
-    title = "Learning Curves with Logistic Regression (with select from model)"
+    title = "Learning Curves with" + title + "with select from model)"
     Plotting.plot_lc_curve(X_train, Y_train, title)
     return X_new
-
-def clustering(X, title):
-    inertia = []  # Squared Distance between Centroids and data points
-    for n in range(1, 11):
-        algorithm = (KMeans(n_clusters=n, init='k-means++', n_init=10, random_state=111,
-                            algorithm='elkan'))
-        algorithm.fit(X)
-        inertia.append(algorithm.inertia_)
-
-    plt.figure()
-    plt.plot(np.arange(1, 11), inertia, 'o')
-    plt.plot(np.arange(1, 11), inertia, '-', alpha=0.5)
-    plt.xlabel('Number of Clusters'), plt.ylabel('Inertia')
-    plt.title(title)
-    plt.show()
-    algorithm_final = KMeans(n_clusters=4, init='k-means++', n_init=10, max_iter=300, tol=0.0001, random_state=111,
-                             algorithm='elkan')
-
-    X3 = X[['Age', 'RNA EOT', 'RNA EF']].iloc[:, :].values
-    fig = plt.figure()
-    algorithm_final.fit(X3)
-    labels4 = algorithm_final.labels_
-    # print(labels3)
-    X['label4'] = labels4
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(xs=X['Age'], ys=X['RNA EOT'], zs=X['RNA EF'], marker='o', s=300,
-               c=X['label4'])
-    ax.set_xlabel('Age')
-    ax.set_ylabel('RNA EOT')
-    ax.set_zlabel('RNA EF')
-    plt.title('Clusters '+title)
-
-    plt.show()
 
 
 def discretization_Age(i):
@@ -237,6 +207,7 @@ def discr_fun(X):
     return X
 
 
+# TODO Target encoder sulle features
 def converting_to_0_and_1(X):
     le = LabelEncoder()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
     # i valori variano e possono essere 1 o 2. Li converto in 0 e 1 per maggior praticità
@@ -304,7 +275,7 @@ if __name__ == '__main__':
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    EDA.analysis_dataset(df.copy())
+    # EDA.analysis_dataset(df.copy())
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
 
@@ -312,9 +283,7 @@ if __name__ == '__main__':
     X_not_discret = X.copy()
     if discretization_bool:
         X = discr_fun(X)
-    if discretization_bool:
-        clustering(X, "with data not continues")
-    clustering(X_not_discret, "with data continues")
+
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
     X = converting_to_0_and_1(X)
@@ -355,19 +324,29 @@ if __name__ == '__main__':
     )
 
     # -----------------------Feature Selection---------------------------------
+    clf_KNN_no_feat_sel = KNeighborsClassifier()
+    select_best_features_with_kbest(X,Y, "K best")
+
+
     if problem_is_binarized:
         clf_DT = Pipeline(
-            [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
+            [('feature_selection', SelectFromModel(DecisionTreeClassifier(random_state=0))),
              ('classification', DecisionTreeClassifier(random_state=0))])
         clf_KNN = KNeighborsClassifier()
+        njobs = 4
+
+
+
     else:
 
         clf_DT = Pipeline(
             [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
-             ('classification', DecisionTreeClassifier(random_state=0))])
-        clf_KNN = KNeighborsClassifier()
+             ('classification', DecisionTreeClassifier())])
 
-    # --------------------------------END FEATURES SELCTION--------------------------------
+        njobs = 4
+        clf_KNN = Pipeline([('selector', SelectKBest(k=7)), ('classifier', KNeighborsClassifier(n_jobs=njobs))])
+
+    # --------------------------------END FEATURES SELECTION--------------------------------
 
     if standardization:
         normalization = False
@@ -397,7 +376,6 @@ if __name__ == '__main__':
         clf_KNN.fit(X_train, Y_train)
         y_pred_1 = clf_DT.predict(X_test)
         y_pred_2 = clf_KNN.predict(X_test)
-
 
     # clustering(X_train)
     # clustering(X_test)
