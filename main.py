@@ -232,7 +232,7 @@ def discr_fun(X):
     X['RNA 4'] = X['RNA 4'].apply(discretization_RNA)
     X['RNA 12'] = X['RNA 12'].apply(discretization_RNA)
     X['RNA EOT'] = X['RNA EOT'].apply(discretization_RNA)
-    X['RNA EF'] = X[R'RNA EF'].apply(discretization_RNA)
+    X['RNA EF'] = X['RNA EF'].apply(discretization_RNA)
 
     return X
 
@@ -304,7 +304,7 @@ if __name__ == '__main__':
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    EDA.analysis_dataset(df)
+    EDA.analysis_dataset(df.copy())
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
 
