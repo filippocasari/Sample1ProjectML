@@ -1,8 +1,7 @@
 import os
 
 import numpy as np
-from scipy.stats import chi2
-from sklearn import cluster
+
 from sklearn.cluster import KMeans
 from sklearn.feature_selection import SelectFromModel
 from sklearn.linear_model import LogisticRegression
@@ -11,9 +10,10 @@ from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, pr
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.svm import SVC
 
 from sklearn.tree import DecisionTreeClassifier
+
+import EDA
 import Plotting
 from Features_Selection import feature_selection_kbest
 import seaborn as sns
@@ -87,30 +87,6 @@ def select_from_model(X, Y, clf):
     title = "Learning Curves with Logistic Regression (with select from model)"
     Plotting.plot_lc_curve(X_train, Y_train, title)
     return X_new
-
-
-def analysis_dataset(df):
-    # EDA starting...
-    print(df)
-    # df = discr_fun(df)
-
-    # plt.hist(df['Baselinehistological staging'])
-
-    # show the balanced dataset
-    sns.displot(data=df['Baselinehistological staging'])
-    plt.show()
-
-    df.plot.scatter(x='RNA 12', y='RNA EF', c='Baselinehistological staging', logy=True, cmap='summer')
-    plt.show()
-    df.plot.scatter(x='RNA 12', y='RNA EOT', c='Baselinehistological staging', logy=True, cmap='autumn')
-    plt.show()
-    print(pd.crosstab(df['RNA 12'], df['Baselinehistological staging'], margins=True))
-    sns.countplot(x='RNA 12', hue='RNA EOT', data=df)
-    plt.show()
-    sns.boxplot(x='RNA EF', data=df)
-    plt.show()
-    plt.close()
-
 
 def clustering(X, title):
     inertia = []  # Squared Distance between Centroids and data points
@@ -328,7 +304,7 @@ if __name__ == '__main__':
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    # analysis_dataset(df)
+    EDA.analysis_dataset(df)
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
 
