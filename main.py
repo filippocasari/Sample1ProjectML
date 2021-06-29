@@ -312,7 +312,9 @@ if __name__ == '__main__':
     X_not_discret = X.copy()
     if discretization_bool:
         X = discr_fun(X)
-
+    if discretization_bool:
+        clustering(X, "with data not continues")
+    clustering(X_not_discret, "with data continues")
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
     X = converting_to_0_and_1(X)
@@ -328,15 +330,7 @@ if __name__ == '__main__':
     df = pd.concat([X, Y], axis=1)
     print("DF after preprocessing: \n" + str(df))
     counting_features(Y)  # conto le features
-    corr_df = df.corr()
-    print("The correlation DataFrame is:")
-    print(corr_df, "\n")
 
-    # list_corr=corr_df.abs().nlargest(28, Y)['Baselinehistological staging'].index
-    plt.figure(figsize=(40, 30))
-    matrix = np.triu(corr_df, k=1)
-    sns.heatmap(corr_df, annot=True, cmap='coolwarm', square=True, linewidth=0.1, mask=matrix)
-    plt.show()
     X_std, X_min_max = normalization_and_standardization(X)
 
     # TODO countplot, displot, pieplot, barplot, violin plot, pairplot
@@ -404,9 +398,7 @@ if __name__ == '__main__':
         y_pred_1 = clf_DT.predict(X_test)
         y_pred_2 = clf_KNN.predict(X_test)
 
-    if discretization_bool:
-        clustering(X, "with data not continues")
-    clustering(X_not_discret, "with data continues")
+
     # clustering(X_train)
     # clustering(X_test)
     # sns.displot(data=Y_test, x=Y_test.classes_)

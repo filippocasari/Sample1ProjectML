@@ -1,5 +1,6 @@
 import itertools
 
+import numpy as np
 import seaborn as sns
 import pandas as pd
 
@@ -34,5 +35,13 @@ def analysis_dataset(df):
     mks = itertools.cycle(["o", "s", "D", "X", "v"])
     markers = [next(mks) for i in df[hue].unique()]
     g = sns.pairplot(df_chosen, hue=hue, markers=markers, palette=['red', 'green', 'black', 'yellow'])
+    corr_df = df.corr()
+    print("The correlation DataFrame is:")
+    print(corr_df, "\n")
+
+    # list_corr=corr_df.abs().nlargest(28, Y)['Baselinehistological staging'].index
+    plt.figure(figsize=(40, 30))
+    matrix = np.triu(corr_df, k=1)
+    sns.heatmap(corr_df, annot=True, cmap='coolwarm', square=True, linewidth=0.1, mask=matrix)
 
     plt.show()
