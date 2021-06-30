@@ -13,8 +13,10 @@ from sklearn.pipeline import Pipeline
 
 from sklearn.tree import DecisionTreeClassifier
 
+import Cross_Valuation
 import EDA
 import Plotting
+import Valuation
 from Features_Selection import feature_selection_kbest
 import seaborn as sns
 import pandas as pd
@@ -44,8 +46,8 @@ def plot_metrics_for_each_features(X, name_png):
         # directory already exists
         pass
     fig, axes = plt.subplots(5, 6)
-    index=0
-    j=1
+    index = 0
+    j = 1
     for i in X.columns:
         '''
         figure = sns.displot(X, x=i)
@@ -53,13 +55,11 @@ def plot_metrics_for_each_features(X, name_png):
         figure.savefig("./plots/" + str(i) + name_png)
         plt.close()  # plot close per chiudere la finestra di plot, onde evitare troppi  (>20)\
         # ed avere un errore a Runtime'''
-        j+=1
+        j += 1
         sns.catplot(data=X, x=i, kind="count")
         # axes[index].set_title(i)
 
-
     plt.show()
-
 
 
 def splitting_train_test(X, Y):
@@ -96,6 +96,7 @@ def select_best_features_with_kbest(X, Y, title, clf):
     plt.ylim(0, 0.4)
     plt.ylabel("accuracy score")
     plt.show()
+
     # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
 
 
@@ -314,14 +315,17 @@ if __name__ == '__main__':
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    # EDA.analysis_dataset(df.copy())
+    #EDA.analysis_dataset(df.copy())
+
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
 
     X = df.drop(columns='Baselinehistological staging')
     X_not_discret = X.copy()
+    EDA.clustering(X_not_discret, "evaluation without discretization")
     if discretization_bool:
         X = discr_fun(X)
+        EDA.clustering(X, "evaluation with discretization")
 
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
@@ -329,14 +333,13 @@ if __name__ == '__main__':
 
     X = X.drop(columns='HGB')
     df = pd.concat([X, Y], axis=1)
-    #plot_metrics_for_each_features(df, "ciao")
+    # plot_metrics_for_each_features(df, "ciao")
     name_columns = X.columns
     print("X:\n" + str(X))
     # discretization_HGB(X) # TODO da rivedere
 
     # stesso preprocessing per l'array di output
     # Y = le.fit_transform(Y)
-
 
     print("DF after preprocessing: \n" + str(df))
     counting_features(Y)  # conto le features
@@ -365,9 +368,17 @@ if __name__ == '__main__':
     )
 
     # -----------------------Feature Selection---------------------------------
-    njobs = 4
+
     clf_KNN_no_feat_sel = KNeighborsClassifier()
-    select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
+    #select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
+    X_train_new = pd.DataFrame(data=SelectKBest(k=3).fit_transform(X_train, Y_train), columns=['Gender', 'BMI', 'ALT after 24 w'])
+    X_test_new = pd.DataFrame(data=X_test, columns=X_train_new.columns)
+    # --------------------------------END FEATURES SELECTION--------------------------------
+    # --------------------------------------------------------------------------------------
+    # --------------------------------CROSS VALIDATION----------------------------------
+    # ---------------------------------------------------------------------------------------
+    #Cross_Valuation.make_cross_evaluation(X_train_new, X_test_new, Y_train, Y_test)
+
     # X_train_new, X_test_new = feature_selection_varince(X_train, X_test)
     if problem_is_binarized:
         clf_DT = Pipeline(
@@ -383,9 +394,7 @@ if __name__ == '__main__':
              ('classification', DecisionTreeClassifier())])
 
         njobs = 4
-        clf_KNN = Pipeline([('selector', SelectKBest(k=23)), ('classifier', KNeighborsClassifier())])
-
-    # --------------------------------END FEATURES SELECTION--------------------------------
+        clf_KNN = Pipeline([('selector', SelectKBest(k=3)), ('classifier', KNeighborsClassifier())])
 
     if standardization:
         normalization = False
@@ -416,8 +425,13 @@ if __name__ == '__main__':
         y_pred_1 = clf_DT.predict(X_test)
         y_pred_2 = clf_KNN.predict(X_test)
 
-    # clustering(X_train)
-    # clustering(X_test)
+    X_train_new_2f = pd.DataFrame(data=X_train,
+                               columns=['RNA EF', 'RNA EOT'])
+    X_test_new_2f = pd.DataFrame(data=X_test, columns=X_train_new.columns)
+    #Cross_Valuation.make_cross_evaluation(X_train_new_2f, X_test_new_2f, Y_train, Y_test)
+    y_KNN_without_preproc=clf_KNN_no_feat_sel.fit(X_train, Y_train).predict(X_test)
+
+
     # sns.displot(data=Y_test, x=Y_test.classes_)
     # plt.show()
     print("Preprocessing applied? " + str(preproc))
@@ -430,5 +444,24 @@ if __name__ == '__main__':
     print("accuracy score for Decision tree: " + str(accuracy_score(Y_test, y_pred_1)))
     print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_pred_2)))
     print("classification report for Decision tree:\n " + str(classification_report(Y_test, y_pred_1)))
+    y_predicted=[]
+    y_predicted.append(y_pred_2)
+    y_predicted.append(y_pred_1)
+    names_model=['KNN', 'Decision Tree']
+    #Valuation.valuating_models(names_model, Y_test, y_predicted)
+    print("KNN without preprocessing:\n")
+    print("accuracy score for KNeighbors: " + str(accuracy_score(Y_test, y_KNN_without_preproc)))
 
-    # select_from_model(X, Y, clf)
+
+    print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_KNN_without_preproc)))
+    parameters = {'n_neighbors': list(range(1, 10, 2)), "weights": ["uniform", "distance"], "p": [1, 2]}
+    knn_model = KNeighborsClassifier()
+    Cross_Valuation.make_cross_evaluation(X_train_new, X_test_new, Y_train, Y_test, knn_model, parameters, "KNN with preprocessing")
+    parameters = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"], "splitter": ["best", "random"]}
+    knn_model = DecisionTreeClassifier()
+    Cross_Valuation.make_cross_evaluation(X_train, X_test, Y_train, Y_test, knn_model, parameters, "Decision Tree with preprocessing")
+    Cross_Valuation.make_cross_evaluation(X_train, X_test, Y_train, Y_test, knn_model, parameters, "KNN without preprocessing")
+    parameters = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"], "splitter": ["best", "random"]}
+    knn_model = DecisionTreeClassifier()
+    Cross_Valuation.make_cross_evaluation(X_train, X_test, Y_train, Y_test, knn_model, parameters,
+                                          "Decision Tree without preprocessing")

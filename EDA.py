@@ -13,15 +13,15 @@ from main import discretization_bool, discr_fun
 
 def clustering(X, title):
     inertia = []  # Squared Distance between Centroids and data points
-    for n in range(1, 11):
+    for n in range(1, 15):
         algorithm = (KMeans(n_clusters=n, init='k-means++', n_init=10, random_state=111,
                             algorithm='elkan'))
         algorithm.fit(X)
         inertia.append(algorithm.inertia_)
 
     plt.figure()
-    plt.plot(np.arange(1, 11), inertia, 'o')
-    plt.plot(np.arange(1, 11), inertia, '-', alpha=0.5)
+    plt.plot(np.arange(1, 15), inertia, 'o')
+    plt.plot(np.arange(1, 15), inertia, '-', alpha=0.5)
     plt.xlabel('Number of Clusters'), plt.ylabel('Inertia')
     plt.title(title)
     plt.show()
@@ -70,9 +70,7 @@ def analysis_dataset(df):
         gr = sns.FacetGrid(data=df, row='Age', col="RNA EF", hue="Baselinehistological staging", height=3.5)
         gr.map(plt.scatter, "1", "2", alpha=0.6)
         gr.add_legend()
-
-
-    if discretization_bool:
+        plt.show()
         clustering(X, "with data not continues")
 
     clustering(X_not_discret, "with data continues")
@@ -84,7 +82,7 @@ def analysis_dataset(df):
 
     plt.title("RNA EF and Classes")
 
-    sns.countplot(x='RNA 12', hue=hue, data=df)
+    #sns.countplot(x='RNA 12', hue=hue, data=df)
     plt.show()
     '''
     df.plot.scatter(x='RNA 12', y='RNA EF', c='Baselinehistological staging', logy=True, cmap='summer')
