@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-
+from mlxtend.plotting import plot_decision_regions
 from sklearn.cluster import KMeans
 from sklearn.feature_selection import SelectFromModel, SelectKBest, VarianceThreshold, chi2
 from sklearn.linear_model import LogisticRegression
@@ -249,7 +249,7 @@ def discr_fun(X):
 
 # TODO Target encoder sulle features
 def converting_to_0_and_1(X):
-    le = LabelEncoder()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
+    le = LabelBinarizer()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
     # i valori variano e possono essere 1 o 2. Li converto in 0 e 1 per maggior praticità
     X['Gender'] = le.fit_transform(X['Gender'])
     # print("Gender array: \n"+str(X['Gender']))
@@ -315,7 +315,7 @@ if __name__ == '__main__':
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    #EDA.analysis_dataset(df.copy())
+    # EDA.analysis_dataset(df.copy())
 
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
@@ -370,14 +370,15 @@ if __name__ == '__main__':
     # -----------------------Feature Selection---------------------------------
 
     clf_KNN_no_feat_sel = KNeighborsClassifier()
-    #select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
-    X_train_new = pd.DataFrame(data=SelectKBest(k=3).fit_transform(X_train, Y_train), columns=['Gender', 'BMI', 'ALT after 24 w'])
+    # select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
+    X_train_new = pd.DataFrame(data=SelectKBest(k=3).fit_transform(X_train, Y_train),
+                               columns=['Gender', 'BMI', 'ALT after 24 w'])
     X_test_new = pd.DataFrame(data=X_test, columns=X_train_new.columns)
     # --------------------------------END FEATURES SELECTION--------------------------------
     # --------------------------------------------------------------------------------------
     # --------------------------------CROSS VALIDATION----------------------------------
     # ---------------------------------------------------------------------------------------
-    #Cross_Valuation.make_cross_evaluation(X_train_new, X_test_new, Y_train, Y_test)
+    # Cross_Valuation.make_cross_evaluation(X_train_new, X_test_new, Y_train, Y_test)
 
     # X_train_new, X_test_new = feature_selection_varince(X_train, X_test)
     if problem_is_binarized:
@@ -426,11 +427,10 @@ if __name__ == '__main__':
         y_pred_2 = clf_KNN.predict(X_test)
 
     X_train_new_2f = pd.DataFrame(data=X_train,
-                               columns=['RNA EF', 'RNA EOT'])
+                                  columns=['RNA EF', 'RNA EOT'])
     X_test_new_2f = pd.DataFrame(data=X_test, columns=X_train_new.columns)
-    #Cross_Valuation.make_cross_evaluation(X_train_new_2f, X_test_new_2f, Y_train, Y_test)
-    y_KNN_without_preproc=clf_KNN_no_feat_sel.fit(X_train, Y_train).predict(X_test)
-
+    # Cross_Valuation.make_cross_evaluation(X_train_new_2f, X_test_new_2f, Y_train, Y_test)
+    y_KNN_without_preproc = clf_KNN_no_feat_sel.fit(X_train, Y_train).predict(X_test)
 
     # sns.displot(data=Y_test, x=Y_test.classes_)
     # plt.show()
@@ -444,24 +444,38 @@ if __name__ == '__main__':
     print("accuracy score for Decision tree: " + str(accuracy_score(Y_test, y_pred_1)))
     print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_pred_2)))
     print("classification report for Decision tree:\n " + str(classification_report(Y_test, y_pred_1)))
-    y_predicted=[]
+    y_predicted = []
     y_predicted.append(y_pred_2)
     y_predicted.append(y_pred_1)
-    names_model=['KNN', 'Decision Tree']
-    #Valuation.valuating_models(names_model, Y_test, y_predicted)
+    names_model = ['KNN', 'Decision Tree']
+    # Valuation.valuating_models(names_model, Y_test, y_predicted)
     print("KNN without preprocessing:\n")
     print("accuracy score for KNeighbors: " + str(accuracy_score(Y_test, y_KNN_without_preproc)))
 
-
     print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_KNN_without_preproc)))
-    parameters = {'n_neighbors': list(range(1, 10, 2)), "weights": ["uniform", "distance"], "p": [1, 2]}
+    parameters_dt = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"],
+                     "splitter": ["best", "random"]}
+    parameters_knn = {'n_neighbors': list(range(1, 10, 2)), "weights": ["uniform", "distance"], "p": [1, 2]}
+
     knn_model = KNeighborsClassifier()
-    Cross_Valuation.make_cross_evaluation(X_train_new, X_test_new, Y_train, Y_test, knn_model, parameters, "KNN with preprocessing")
-    parameters = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"], "splitter": ["best", "random"]}
-    knn_model = DecisionTreeClassifier()
-    Cross_Valuation.make_cross_evaluation(X_train, X_test, Y_train, Y_test, knn_model, parameters, "Decision Tree with preprocessing")
-    Cross_Valuation.make_cross_evaluation(X_train, X_test, Y_train, Y_test, knn_model, parameters, "KNN without preprocessing")
-    parameters = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"], "splitter": ["best", "random"]}
-    knn_model = DecisionTreeClassifier()
-    Cross_Valuation.make_cross_evaluation(X_train, X_test, Y_train, Y_test, knn_model, parameters,
+    decis_tree = DecisionTreeClassifier()
+    '''
+    Cross_Valuation.make_cross_evaluation(X_train_new, Y_train, knn_model, parameters_knn, "KNN with preprocessing")
+    Cross_Valuation.make_cross_evaluation(X_train, Y_train, decis_tree, parameters_dt,
+                                          "Decision Tree with preprocessing")
+    Cross_Valuation.make_cross_evaluation(X_train, Y_train, knn_model, parameters_knn, "KNN without preprocessing")
+    Cross_Valuation.make_cross_evaluation(X_train, Y_train, decis_tree, parameters_dt,
                                           "Decision Tree without preprocessing")
+    '''
+    
+    fig, ax = plt.subplots()
+    X_std=StandardScaler().fit_transform(X[['RNA 12', 'RNA EOT']])
+    decis_tree.fit(X_not_discret[['RNA 12', 'RNA EF']], Y)
+    plot_decision_regions(X_not_discret[['RNA 12', 'RNA EF']].values, Y.values,decis_tree, ax=ax)
+    ax.set_xlabel('RNA 12')
+    ax.set_ylabel('RNA EF')
+    fig.suptitle('DT plot')
+
+    
+    
+    plt.show()
