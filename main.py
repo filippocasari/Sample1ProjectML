@@ -35,33 +35,44 @@ preproc = True
 # used algorithms : Logistic Regression, DecisionTree, Clustering (K-means for evaluate number of classes)
 
 
-def plot_metrics_for_each_features(names_cols, X, name_png):
+def plot_metrics_for_each_features(X, name_png):
     figures = []
+    names_cols = X.columns
     try:
         os.makedirs("./plots")
     except FileExistsError:
         # directory already exists
         pass
-    for i in names_cols:
+    fig, axes = plt.subplots(5, 6)
+    index=0
+    j=1
+    for i in X.columns:
+        '''
         figure = sns.displot(X, x=i)
         figures.append(figure)
-
         figure.savefig("./plots/" + str(i) + name_png)
         plt.close()  # plot close per chiudere la finestra di plot, onde evitare troppi  (>20)\
-        # ed avere un errore a Runtime
+        # ed avere un errore a Runtime'''
+        j+=1
+        sns.catplot(data=X, x=i, kind="count")
+        # axes[index].set_title(i)
+
+
+    plt.show()
+
 
 
 def splitting_train_test(X, Y):
     X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y, random_state=0, train_size=0.7
+        X, Y, random_state=0, train_size=0.8
     )
     return X_train, X_test, Y_train, Y_test
 
 
 def select_best_features_with_kbest(X, Y, title, clf):
     X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
-    indexes=[]
-    accuracy_scores=[]
+    indexes = []
+    accuracy_scores = []
     for i in range(3, 28):
         title = "Learning Curves with " + title
         selector = SelectKBest(chi2, k=i)
@@ -71,20 +82,21 @@ def select_best_features_with_kbest(X, Y, title, clf):
         scores /= scores.max()
 
         X_train_new = selector.transform(X_train)
-        X_test_new=selector.transform(X_test)
+        X_test_new = selector.transform(X_test)
         indexes.append(i)
-        accuracy_scores.append(accuracy_score(Y_test,(clf.fit(X_train_new, Y_train)).predict(X_test_new)))
-        print(str(accuracy_score(Y_test,(clf.fit(X_train_new, Y_train)).predict(X_test_new)))+" with "+str(i)+" features")
-        #print(X_new.shape)
-        #print(" X with selection K BEST \n" + str(X.columns.values[selector.get_support()]))
-        # Plotting.plot_lc_curve(X_train, Y_train, title, i, clf)
+        accuracy_scores.append(accuracy_score(Y_test, (clf.fit(X_train_new, Y_train)).predict(X_test_new)))
+        print(str(accuracy_score(Y_test, (clf.fit(X_train_new, Y_train)).predict(X_test_new))) + " with " + str(
+            i) + " features")
+        # print(X_new.shape)
+        print(" X with selection K BEST \n" + str(X.columns.values[selector.get_support()]))
+        Plotting.plot_lc_curve(X_train_new, Y_train, title, i, clf)
 
     sns.barplot(x=indexes, y=accuracy_scores)
     plt.xlabel("K features")
     plt.ylim(0, 0.4)
     plt.ylabel("accuracy score")
     plt.show()
-        # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
+    # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
 
 
 def feature_selection_varince(X_train, X_test):
@@ -316,6 +328,8 @@ if __name__ == '__main__':
     X = converting_to_0_and_1(X)
 
     X = X.drop(columns='HGB')
+    df = pd.concat([X, Y], axis=1)
+    #plot_metrics_for_each_features(df, "ciao")
     name_columns = X.columns
     print("X:\n" + str(X))
     # discretization_HGB(X) # TODO da rivedere
@@ -323,7 +337,7 @@ if __name__ == '__main__':
     # stesso preprocessing per l'array di output
     # Y = le.fit_transform(Y)
 
-    df = pd.concat([X, Y], axis=1)
+
     print("DF after preprocessing: \n" + str(df))
     counting_features(Y)  # conto le features
 
@@ -351,15 +365,16 @@ if __name__ == '__main__':
     )
 
     # -----------------------Feature Selection---------------------------------
+    njobs = 4
     clf_KNN_no_feat_sel = KNeighborsClassifier()
     select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
-    #X_train_new, X_test_new = feature_selection_varince(X_train, X_test)
+    # X_train_new, X_test_new = feature_selection_varince(X_train, X_test)
     if problem_is_binarized:
         clf_DT = Pipeline(
             [('feature_selection', SelectFromModel(DecisionTreeClassifier(random_state=0))),
              ('classification', DecisionTreeClassifier(random_state=0))])
         clf_KNN = KNeighborsClassifier()
-        njobs = 4
+
 
     else:
 
@@ -368,7 +383,7 @@ if __name__ == '__main__':
              ('classification', DecisionTreeClassifier())])
 
         njobs = 4
-        clf_KNN = Pipeline([('selector', SelectKBest(k=7)), ('classifier', KNeighborsClassifier(n_jobs=njobs))])
+        clf_KNN = Pipeline([('selector', SelectKBest(k=23)), ('classifier', KNeighborsClassifier())])
 
     # --------------------------------END FEATURES SELECTION--------------------------------
 
