@@ -32,6 +32,7 @@ problem_is_binarized = False
 normalization = False
 standardization = False
 preproc = True
+np.random.seed(31415)
 
 
 # used algorithms : Logistic Regression, DecisionTree, Clustering (K-means for evaluate number of classes)
@@ -64,7 +65,7 @@ def plot_metrics_for_each_features(X, name_png):
 
 def splitting_train_test(X, Y):
     X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y, random_state=0, train_size=0.8
+        X, Y, random_state=0, train_size=0.7
     )
     return X_train, X_test, Y_train, Y_test
 
@@ -225,7 +226,34 @@ def discretization_RNA(i):
     return i
 
 
+def discr_male_HGB(i):
+    if 2 <= i < 14:
+        i = 0
+    elif 14 <= i <= 17:
+        i = 1
+    elif 17 < i <= 20:
+        i = 2
+    return i
+
+
+def discr_female_HGB(i):
+    if 2 <= i < 12:
+        i = 0
+    elif 12 <= i <= 15:
+        i = 1
+    elif 15 < i <= 20:
+        i = 2
+    return i
+
+
+def discr_HGB(df):
+    df['HGB'] = df['HGB'].apply(lambda x: discr_male_HGB(x) if x == 1 else discr_female_HGB(x))
+    print(df['HGB'])
+    return df
+
+
 def discr_fun(X):
+    X = discr_HGB(X)
     X['Age'] = X['Age'].apply(discretization_Age)
     X['BMI'] = X['BMI'].apply(discretization_BMI)
     X['WBC'] = X['WBC'].apply(discretization_WBC)
@@ -304,18 +332,13 @@ def binarizing_problem(i):
     return i
 
 
-def label_encoding(i_y):
-    i_y = i_y - 1
-    return i_y
-
-
 if __name__ == '__main__':
 
     # Dati di input
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    # EDA.analysis_dataset(df.copy())
+    EDA.analysis_dataset(df)
 
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
@@ -331,7 +354,6 @@ if __name__ == '__main__':
     Y = Y.astype(int)  # converto in type int
     X = converting_to_0_and_1(X)
 
-    X = X.drop(columns='HGB')
     df = pd.concat([X, Y], axis=1)
     # plot_metrics_for_each_features(df, "ciao")
     name_columns = X.columns
@@ -364,13 +386,13 @@ if __name__ == '__main__':
         Y = Y.apply(binarizing_problem)
 
     X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y, random_state=0, train_size=0.70
+        X, Y, random_state=0, train_size=0.80
     )
 
     # -----------------------Feature Selection---------------------------------
 
     clf_KNN_no_feat_sel = KNeighborsClassifier()
-    # select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
+    select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
     X_train_new = pd.DataFrame(data=SelectKBest(k=3).fit_transform(X_train, Y_train),
                                columns=['Gender', 'BMI', 'ALT after 24 w'])
     X_test_new = pd.DataFrame(data=X_test, columns=X_train_new.columns)
@@ -391,16 +413,16 @@ if __name__ == '__main__':
     else:
 
         clf_DT = Pipeline(
-            [('feature_selection', SelectFromModel(DecisionTreeClassifier())),
-             ('classification', DecisionTreeClassifier())])
+            [('feature_selection', SelectFromModel(DecisionTreeClassifier(random_state=0))),
+             ('classification', DecisionTreeClassifier(random_state=0))])
 
         njobs = 4
-        clf_KNN = Pipeline([('selector', SelectKBest(k=3)), ('classifier', KNeighborsClassifier())])
+        clf_KNN = Pipeline([('selector', SelectKBest(k=23)), ('classifier', KNeighborsClassifier())])
 
     if standardization:
         normalization = False
         X_train_std, X_test_std, Y_train, Y_test = train_test_split(
-            X_std, Y, random_state=0, train_size=0.70
+            X_std, Y, random_state=0, train_size=0.80
         )
 
         clf_DT.fit(X_train_std, Y_train)
@@ -412,7 +434,7 @@ if __name__ == '__main__':
         standardization = False
 
         X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
-            X_min_max, Y, random_state=0, train_size=0.70
+            X_min_max, Y, random_state=0, train_size=0.80
         )
 
         clf_DT.fit(X_train_minmax, Y_train)
@@ -457,8 +479,8 @@ if __name__ == '__main__':
                      "splitter": ["best", "random"]}
     parameters_knn = {'n_neighbors': list(range(1, 10, 2)), "weights": ["uniform", "distance"], "p": [1, 2]}
 
-    knn_model = KNeighborsClassifier()
-    decis_tree = DecisionTreeClassifier()
+    knn_model = KNeighborsClassifier(random_state=0)
+    decis_tree = DecisionTreeClassifier(random_state=0)
     '''
     Cross_Valuation.make_cross_evaluation(X_train_new, Y_train, knn_model, parameters_knn, "KNN with preprocessing")
     Cross_Valuation.make_cross_evaluation(X_train, Y_train, decis_tree, parameters_dt,
@@ -467,15 +489,13 @@ if __name__ == '__main__':
     Cross_Valuation.make_cross_evaluation(X_train, Y_train, decis_tree, parameters_dt,
                                           "Decision Tree without preprocessing")
     '''
-    
+
     fig, ax = plt.subplots()
-    X_std=StandardScaler().fit_transform(X[['RNA 12', 'RNA EOT']])
+    X_std = StandardScaler().fit_transform(X[['RNA 12', 'RNA EOT']])
     decis_tree.fit(X_not_discret[['RNA 12', 'RNA EF']], Y)
-    plot_decision_regions(X_not_discret[['RNA 12', 'RNA EF']].values, Y.values,decis_tree, ax=ax)
+    plot_decision_regions(X_not_discret[['RNA 12', 'RNA EF']].values, Y.values, decis_tree, ax=ax)
     ax.set_xlabel('RNA 12')
     ax.set_ylabel('RNA EF')
     fig.suptitle('DT plot')
 
-    
-    
     plt.show()

@@ -33,10 +33,10 @@ def clustering(X, title):
     algorithm_final.fit(X3)
     labels4 = algorithm_final.labels_
     # print(labels3)
-    X['label4'] = labels4
+
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(xs=X['Age'], ys=X['RNA EOT'], zs=X['RNA EF'], marker='o', s=300,
-               c=X['label4'])
+               c=labels4)
     ax.set_xlabel('Age')
     ax.set_ylabel('RNA EOT')
     ax.set_zlabel('RNA EF')
@@ -53,8 +53,7 @@ def analysis_dataset(df):
     # plt.hist(df['Baselinehistological staging'])
     corr_matrix = df.corr()
     sns.heatmap(corr_matrix, square=False )
-    plt.figure(figsize=(20, 20))
-    #plt.scatter(df['Total day minutes'], df['Total night minutes'])
+
     plt.show()
     print(df.info())
     print(df.isnull())
@@ -63,25 +62,22 @@ def analysis_dataset(df):
     columns_to_show = ['Age', 'RNA 12', 'RNA EOT']
     print(df.groupby(['Baselinehistological staging'])[columns_to_show].describe(percentiles=[]))
     X = df.drop(columns='Baselinehistological staging')
-    X_not_discret = X.copy()
-    if discretization_bool:
-        X = discr_fun(X)
-        print("X discretizzata...")
-        gr = sns.FacetGrid(data=df, row='Age', col="RNA EF", hue="Baselinehistological staging", height=3.5)
-        gr.map(plt.scatter, "1", "2", alpha=0.6)
-        gr.add_legend()
-        plt.show()
-        clustering(X, "with data not continues")
 
-    clustering(X_not_discret, "with data continues")
+
+    X = discr_fun(X)
+    print("X discretizzata...")
+    #gr = sns.FacetGrid(data=df, row='Age', col="RNA EF", hue="Baselinehistological staging", height=3.5)
+    #gr.map(plt.scatter, "1", "2", alpha=0.6)
+    #gr.add_legend()
+    plt.show()
+
+
+
     # show the balanced dataset
     hue = 'Baselinehistological staging'
     sns.displot(data=df['Baselinehistological staging'])
-    #plt.pie(x=hu ,data=df['Baselinehistological staging'], shadow=True)
+
     plt.legend()
-
-    plt.title("RNA EF and Classes")
-
     #sns.countplot(x='RNA 12', hue=hue, data=df)
     plt.show()
     '''
@@ -99,17 +95,17 @@ def analysis_dataset(df):
 
 
     # sns.pairplot(df_chosen, hue=hue)
-    df_chosen = df[['RNA 12', 'RNA EOT', 'RNA EF', hue]]
-    mks = itertools.cycle(["o", "s", "D", "X", "v"])
-    markers = [next(mks) for i in df[hue].unique()]
+    #df_chosen = df[['RNA 12', 'RNA EOT', 'RNA EF', hue]]
+   # mks = itertools.cycle(["o", "s", "D", "X", "v"])
+    #markers = [next(mks) for i in df[hue].unique()]
     #g = sns.pairplot(df_chosen, hue=hue, markers=markers, palette=['red', 'green', 'black', 'yellow'])
     corr_df = df.corr()
     print("The correlation DataFrame is:")
     print(corr_df, "\n")
 
     # list_corr=corr_df.abs().nlargest(28, Y)['Baselinehistological staging'].index
-    plt.figure(figsize=(40, 30))
-    matrix = np.triu(corr_df, k=1)
-    sns.heatmap(corr_df, annot=True, cmap='coolwarm', square=True, linewidth=0.1, mask=matrix)
 
-    plt.show()
+    matrix = np.triu(corr_df, k=1)
+    #sns.heatmap(corr_df, annot=True, cmap='coolwarm', square=True, linewidth=0.1, mask=matrix)
+   # plt.show()
+    return 0
