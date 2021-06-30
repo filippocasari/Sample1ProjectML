@@ -4,15 +4,13 @@ from sklearn.model_selection import learning_curve
 from sklearn.linear_model import LogisticRegression
 
 
-def plot_lc_curve(X, Y, title, i=None):
+def plot_lc_curve(X, Y, title, i=None, clf=None):
     # Cross validation with 100 iterations to get smoother mean test and train
     # score curves, each time with 20% data randomly selected as a validation set.
 
-    estimator = LogisticRegression(class_weight='balanced', multi_class='multinomial',
-                                   max_iter=10000, solver='saga')
     if i != None:
         title = title + " \nnum of k: " + str(i)
-    plot_learning_curve(estimator, title, X, Y, ylim=(0.01, 0.6), n_jobs=-1)
+    plot_learning_curve(clf, title, X, Y, ylim=(0.01, 0.6), n_jobs=-1)
 
     plt.show()
 

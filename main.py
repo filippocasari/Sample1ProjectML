@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from sklearn.cluster import KMeans
-from sklearn.feature_selection import SelectFromModel, SelectKBest
+from sklearn.feature_selection import SelectFromModel, SelectKBest, VarianceThreshold, chi2
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
     precision_recall_curve, classification_report
@@ -58,15 +58,46 @@ def splitting_train_test(X, Y):
     return X_train, X_test, Y_train, Y_test
 
 
-def select_best_features_with_kbest(X, Y, title):
+def select_best_features_with_kbest(X, Y, title, clf):
     X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
+    indexes=[]
+    accuracy_scores=[]
     for i in range(3, 28):
         title = "Learning Curves with " + title
-        X_new = SelectKBest(k=i).fit_transform(X_train, Y_train)
+        selector = SelectKBest(chi2, k=i)
+        selector.fit(X_train, Y_train)
+        X_indices = np.arange(X.shape[-1])
+        scores = selector.scores_
+        scores /= scores.max()
 
-        Plotting.plot_lc_curve(X_train, Y_train, title, i)
+        X_train_new = selector.transform(X_train)
+        X_test_new=selector.transform(X_test)
+        indexes.append(i)
+        accuracy_scores.append(accuracy_score(Y_test,(clf.fit(X_train_new, Y_train)).predict(X_test_new)))
+        print(str(accuracy_score(Y_test,(clf.fit(X_train_new, Y_train)).predict(X_test_new)))+" with "+str(i)+" features")
+        #print(X_new.shape)
+        #print(" X with selection K BEST \n" + str(X.columns.values[selector.get_support()]))
+        # Plotting.plot_lc_curve(X_train, Y_train, title, i, clf)
 
+    sns.barplot(x=indexes, y=accuracy_scores)
+    plt.xlabel("K features")
+    plt.ylim(0, 0.4)
+    plt.ylabel("accuracy score")
+    plt.show()
         # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
+
+
+def feature_selection_varince(X_train, X_test):
+    constant_filter = VarianceThreshold(threshold=0)
+    constant_filter.fit(X_train)
+    constant_columns = [column for column in X_train.columns
+                        if column not in
+                        X_train.columns[constant_filter.get_support()]]
+    X_train = constant_filter.transform(X_train)
+    X_test = constant_filter.transform(X_test)
+    for column in constant_columns:
+        print("Removed ", column)
+    return X_train, X_test
 
 
 def select_from_model(X, Y, clf, title):
@@ -321,16 +352,14 @@ if __name__ == '__main__':
 
     # -----------------------Feature Selection---------------------------------
     clf_KNN_no_feat_sel = KNeighborsClassifier()
-    # select_best_features_with_kbest(X,Y, "K best")
-
+    select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
+    #X_train_new, X_test_new = feature_selection_varince(X_train, X_test)
     if problem_is_binarized:
         clf_DT = Pipeline(
             [('feature_selection', SelectFromModel(DecisionTreeClassifier(random_state=0))),
              ('classification', DecisionTreeClassifier(random_state=0))])
         clf_KNN = KNeighborsClassifier()
         njobs = 4
-
-
 
     else:
 
