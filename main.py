@@ -61,12 +61,8 @@ def splitting_train_test(X, Y):
 def select_best_features_with_kbest(X, Y, title):
     X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
     for i in range(3, 28):
-
-
-
-
-        title = "Learning Curves with "+title
-        X_new = SelectKBest(k= i).fit_transform(X_train, Y_train)
+        title = "Learning Curves with " + title
+        X_new = SelectKBest(k=i).fit_transform(X_train, Y_train)
 
         Plotting.plot_lc_curve(X_train, Y_train, title, i)
 
@@ -325,8 +321,7 @@ if __name__ == '__main__':
 
     # -----------------------Feature Selection---------------------------------
     clf_KNN_no_feat_sel = KNeighborsClassifier()
-    select_best_features_with_kbest(X,Y, "K best")
-
+    # select_best_features_with_kbest(X,Y, "K best")
 
     if problem_is_binarized:
         clf_DT = Pipeline(
