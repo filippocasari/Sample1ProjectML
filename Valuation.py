@@ -13,11 +13,11 @@ def valuating_models(models_name, y_test, y_predicted):
         print('RESULTS OF THE %s CLASSIFIER' % models_name[i])
         print(
             '/-------------------------------------------------------------------------------------------------------- /')
-        print('Accuracy is ', accuracy_score(y_test, y_predicted[i]))
-        print('Precision is ', precision_score(y_test, y_predicted[i],average='macro'))
-        print('Recall is ', recall_score(y_test, y_predicted[i],average='macro'))
-        print('F1-Score is ', f1_score(y_test, y_predicted[i],average='macro'))
-        print('AUC is ', roc_auc_score(y_test, y_predicted[i],average='macro'))
+        #print('Accuracy is ', accuracy_score(y_test, y_predicted[i]))
+        #print('Precision is ', precision_score(y_test, y_predicted[i],average='macro'))
+        #print('Recall is ', recall_score(y_test, y_predicted[i],average='macro',multi_class='ovr'))
+        #print('F1-Score is ', f1_score(y_test, y_predicted[i],average='macro',multi_class='ovr'))
+        #print('AUC is ', roc_auc_score(y_test, y_predicted[i],average='macro', multi_class='ovr'))
 
         fpr, tpr, _ = roc_curve(y_test, y_predicted[i])
         plt.figure('ROC')

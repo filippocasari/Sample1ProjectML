@@ -9,7 +9,7 @@ from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, pr
     precision_recall_curve, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -30,15 +30,17 @@ count_features = False
 discretization_bool = True
 problem_is_binarized = False
 normalization = False
-standardization = False
+standardization = True
 preproc = True
 np.random.seed(31415)
+BEST_PARAMS_KNN = {'n_neighbors': 1, 'p': 1, 'weights': 'uniform'}
+BEST_PARAMS_DT = {'criterion': 'gini', 'max_depth': 9, 'splitter': 'best'}
 
 
 # used algorithms : Logistic Regression, DecisionTree, Clustering (K-means for evaluate number of classes)
 
 
-def plot_metrics_for_each_features(X, name_png):
+def plot_metrics_for_each_features(X, name_png=None):
     figures = []
     names_cols = X.columns
     try:
@@ -70,35 +72,42 @@ def splitting_train_test(X, Y):
     return X_train, X_test, Y_train, Y_test
 
 
-def select_best_features_with_kbest(X, Y, title, clf):
-    X_train, X_test, Y_train, Y_test = splitting_train_test(X, Y)
+def select_best_features_with_kbest(X_train, X_test, Y_train, Y_test, title, clf):
     indexes = []
     accuracy_scores = []
-    for i in range(3, 28):
+    max_accuracy = 0
+    k_migliore = 0
+
+    for i in range(3, 29):
         title = "Learning Curves with " + title
         selector = SelectKBest(chi2, k=i)
         selector.fit(X_train, Y_train)
         X_indices = np.arange(X.shape[-1])
         scores = selector.scores_
         scores /= scores.max()
-
         X_train_new = selector.transform(X_train)
         X_test_new = selector.transform(X_test)
         indexes.append(i)
-        accuracy_scores.append(accuracy_score(Y_test, (clf.fit(X_train_new, Y_train)).predict(X_test_new)))
-        print(str(accuracy_score(Y_test, (clf.fit(X_train_new, Y_train)).predict(X_test_new))) + " with " + str(
+        accuracy = accuracy_score(Y_test, (clf.fit(X_train_new, Y_train)).predict(X_test_new))
+        if (accuracy > max_accuracy):
+            max_accuracy = accuracy
+            k_migliore = i
+            X_train_new_final = selector.transform(X_train)
+            X_test_new_final = selector.transform(X_test)
+
+        accuracy_scores.append(accuracy)
+        print(str(accuracy) + " with " + str(
             i) + " features")
         # print(X_new.shape)
         print(" X with selection K BEST \n" + str(X.columns.values[selector.get_support()]))
-        Plotting.plot_lc_curve(X_train_new, Y_train, title, i, clf)
+        #Plotting.plot_lc_curve(X_train_new, Y_train, title, i, clf)
 
     sns.barplot(x=indexes, y=accuracy_scores)
     plt.xlabel("K features")
     plt.ylim(0, 0.4)
     plt.ylabel("accuracy score")
     plt.show()
-
-    # Plotting.plot_metrics_results(Y_test, y_pred, "Logistic Regression")
+    return k_migliore, max_accuracy, X_train_new_final, X_test_new_final
 
 
 def feature_selection_varince(X_train, X_test):
@@ -315,13 +324,12 @@ def counting_features(Y):
         print("samples of class 3: " + str(count_class_3))
 
 
-def normalization_and_standardization(X):
-    scaler = StandardScaler()
+def standardization_(X):
     min_max_scaler = MinMaxScaler()
     names_cols = X.columns  # nomi delle colonne
-    X_std = pd.DataFrame(scaler.fit_transform(X[names_cols]), columns=names_cols)
+
     X_scale = pd.DataFrame(min_max_scaler.fit_transform(X[names_cols]), columns=names_cols)
-    return X_std, X_scale
+    return X_scale
 
 
 def binarizing_problem(i):
@@ -330,6 +338,13 @@ def binarizing_problem(i):
     if i == 3 or i == 4:
         i = 1
     return i
+
+
+def normalization_(X):
+    scaler = StandardScaler()
+    names_cols = X.columns  # nomi delle colonne
+    X_std = pd.DataFrame(scaler.fit_transform(X[names_cols]), columns=names_cols)
+    return X_std
 
 
 if __name__ == '__main__':
@@ -366,8 +381,6 @@ if __name__ == '__main__':
     print("DF after preprocessing: \n" + str(df))
     counting_features(Y)  # conto le features
 
-    X_std, X_min_max = normalization_and_standardization(X)
-
     # TODO countplot, displot, pieplot, barplot, violin plot, pairplot
     # countplot ==> mette a confronto della classe target, feature più rilevante
 
@@ -388,72 +401,53 @@ if __name__ == '__main__':
     X_train, X_test, Y_train, Y_test = train_test_split(
         X, Y, random_state=0, train_size=0.80
     )
+    # START PREPROCESSING
+    # -----------------------Standardization or Normalization---------------------------------
 
-    # -----------------------Feature Selection---------------------------------
+    X_train_std, X_test_std, Y_train_std, Y_test_std = train_test_split(
+        standardization_(X), Y, random_state=0, train_size=0.80)
+
+    X_train_norm, X_test_norm, Y_train_norm, Y_test_norm = train_test_split(
+        normalization_(X), Y, random_state=0, train_size=0.80
+    )
 
     clf_KNN_no_feat_sel = KNeighborsClassifier()
-    select_best_features_with_kbest(X, Y, "KNN", clf_KNN_no_feat_sel)
-    X_train_new = pd.DataFrame(data=SelectKBest(k=3).fit_transform(X_train, Y_train),
-                               columns=['Gender', 'BMI', 'ALT after 24 w'])
-    X_test_new = pd.DataFrame(data=X_test, columns=X_train_new.columns)
-    # --------------------------------END FEATURES SELECTION--------------------------------
-    # --------------------------------------------------------------------------------------
-    # --------------------------------CROSS VALIDATION----------------------------------
-    # ---------------------------------------------------------------------------------------
-    # Cross_Valuation.make_cross_evaluation(X_train_new, X_test_new, Y_train, Y_test)
+    clf_DT_no_feat_sel = DecisionTreeClassifier()
+    k_migliore_knn, accuracy_max_knn, X_train_new_knn, X_test_new_knn = select_best_features_with_kbest(X_train_std,
+                                                                                                        X_test_std,
+                                                                                                        Y_train_std,
+                                                                                                        Y_test_std,
+                                                                                                        "KNN",
+                                                                                                        clf_KNN_no_feat_sel)
+    k_migliore_dt, accuracy_max_dt, X_train_new_dt, X_test_new_dt = select_best_features_with_kbest(X_train_std,
+                                                                                                    X_test_std,
+                                                                                                    Y_train_std,
+                                                                                                    Y_test_std,
+                                                                                                    "Decision Tree",
+                                                                                                    clf_DT_no_feat_sel)
+    print("Ho selezionato col KNN un numero di feature 'k': ", k_migliore_knn, "\n con accuracy: ", accuracy_max_knn)
+    print("Ho selezionato col DT un numero di feature 'k': ", k_migliore_dt, "\n con accuracy: ", accuracy_max_dt)
+    # ________________________________ Scelti i K best params___________________________________
+    select_k_best_KNN = SelectKBest(k=k_migliore_knn)
+    select_k_best_DT = SelectKBest(k=k_migliore_dt)
+    # ----------------------------------Selezione migliori iperparametri-------------------------
+    parameters_dt = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"],
+                     "splitter": ["best", "random"]}
+    parameters_knn = {'n_neighbors': list(range(1, 10, 2)), "weights": ["uniform", "distance"], "p": [1, 2]}
 
-    # X_train_new, X_test_new = feature_selection_varince(X_train, X_test)
-    if problem_is_binarized:
-        clf_DT = Pipeline(
-            [('feature_selection', SelectFromModel(DecisionTreeClassifier(random_state=0))),
-             ('classification', DecisionTreeClassifier(random_state=0))])
-        clf_KNN = KNeighborsClassifier()
+    # Cross_Valuation.make_cross_evaluation(X_train_new_knn, Y_train, clf_KNN_no_feat_sel, parameters_knn, "KNN with preprocessing")
+    # Cross_Valuation.make_cross_evaluation(X_train_new_dt, Y_train, clf_DT_no_feat_sel, parameters_dt,
+    #          "Decision Tree with preprocessing")
 
+    # ----------------------------------------Modelli coi best iperpar--------------------------
+    knn_model = KNeighborsClassifier(**BEST_PARAMS_KNN)
+    decis_tree = DecisionTreeClassifier(**BEST_PARAMS_DT)
+    # -----------------------------------------Modello finale Preprocessing---------------------
+    clf_KNN_final = make_pipeline(select_k_best_KNN, knn_model)
+    clf_DT_final = make_pipeline(select_k_best_DT, decis_tree)
+    # -----------------------------------------END PREPROCESSING--------------------------------
 
-    else:
-
-        clf_DT = Pipeline(
-            [('feature_selection', SelectFromModel(DecisionTreeClassifier(random_state=0))),
-             ('classification', DecisionTreeClassifier(random_state=0))])
-
-        njobs = 4
-        clf_KNN = Pipeline([('selector', SelectKBest(k=23)), ('classifier', KNeighborsClassifier())])
-
-    if standardization:
-        normalization = False
-        X_train_std, X_test_std, Y_train, Y_test = train_test_split(
-            X_std, Y, random_state=0, train_size=0.80
-        )
-
-        clf_DT.fit(X_train_std, Y_train)
-        clf_KNN.fit(X_train_std, Y_train)
-        y_pred_1 = clf_DT.predict(X_test_std)
-        y_pred_2 = clf_KNN.predict(X_test_std)
-
-    elif normalization:
-        standardization = False
-
-        X_train_minmax, X_test_minmax, Y_train, Y_test = train_test_split(
-            X_min_max, Y, random_state=0, train_size=0.80
-        )
-
-        clf_DT.fit(X_train_minmax, Y_train)
-        clf_KNN.fit(X_train_minmax, Y_train)
-        y_pred_1 = clf_DT.predict(X_test_minmax)
-        y_pred_2 = clf_KNN.predict(X_test_minmax)
-    else:
-        # analisi bontà del clustering
-        clf_DT.fit(X_train, Y_train)
-        clf_KNN.fit(X_train, Y_train)
-        y_pred_1 = clf_DT.predict(X_test)
-        y_pred_2 = clf_KNN.predict(X_test)
-
-    X_train_new_2f = pd.DataFrame(data=X_train,
-                                  columns=['RNA EF', 'RNA EOT'])
-    X_test_new_2f = pd.DataFrame(data=X_test, columns=X_train_new.columns)
-    # Cross_Valuation.make_cross_evaluation(X_train_new_2f, X_test_new_2f, Y_train, Y_test)
-    y_KNN_without_preproc = clf_KNN_no_feat_sel.fit(X_train, Y_train).predict(X_test)
-
+    # --------------------------------------------------------------------------------------------
     # sns.displot(data=Y_test, x=Y_test.classes_)
     # plt.show()
     print("Preprocessing applied? " + str(preproc))
@@ -462,33 +456,24 @@ if __name__ == '__main__':
     print("Standardization applied ? : " + str(standardization))
     print("Normalization applied? : " + str(normalization))
 
-    print("accuracy score for KNeighbors: " + str(accuracy_score(Y_test, y_pred_2)))
-    print("accuracy score for Decision tree: " + str(accuracy_score(Y_test, y_pred_1)))
-    print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_pred_2)))
-    print("classification report for Decision tree:\n " + str(classification_report(Y_test, y_pred_1)))
-    y_predicted = []
-    y_predicted.append(y_pred_2)
-    y_predicted.append(y_pred_1)
-    names_model = ['KNN', 'Decision Tree']
-    # Valuation.valuating_models(names_model, Y_test, y_predicted)
-    print("KNN without preprocessing:\n")
-    print("accuracy score for KNeighbors: " + str(accuracy_score(Y_test, y_KNN_without_preproc)))
+    # ---------------------------------PREDICTION------------------------------------------------
+    clf_KNN_final.fit(X_train_new_knn, Y_train)
+    clf_DT_final.fit(X_train_new_dt, Y_train)
+    ypred_preproc_knn = clf_KNN_final.predict(X_test_new_knn)
+    ypred_preproc_dt = clf_DT_final.predict(X_test_new_dt)
 
-    print("classification report for KNeighbors: \n" + str(classification_report(Y_test, y_KNN_without_preproc)))
-    parameters_dt = {'max_depth': list(range(1, 100, 2)), "criterion": ["gini", "entropy"],
-                     "splitter": ["best", "random"]}
-    parameters_knn = {'n_neighbors': list(range(1, 10, 2)), "weights": ["uniform", "distance"], "p": [1, 2]}
+    # -----------------------------------------NO PREPROCESSING----------------------------------
+    y_KNN_without_preproc = clf_KNN_no_feat_sel.fit(X_train, Y_train).predict(X_test)
+    y_DT_without_preproc = DecisionTreeClassifier().fit(X_train, Y_train).predict(X_test)
 
-    knn_model = KNeighborsClassifier(random_state=0)
-    decis_tree = DecisionTreeClassifier(random_state=0)
-    '''
-    Cross_Valuation.make_cross_evaluation(X_train_new, Y_train, knn_model, parameters_knn, "KNN with preprocessing")
-    Cross_Valuation.make_cross_evaluation(X_train, Y_train, decis_tree, parameters_dt,
-                                          "Decision Tree with preprocessing")
-    Cross_Valuation.make_cross_evaluation(X_train, Y_train, knn_model, parameters_knn, "KNN without preprocessing")
-    Cross_Valuation.make_cross_evaluation(X_train, Y_train, decis_tree, parameters_dt,
-                                          "Decision Tree without preprocessing")
-    '''
+    y_predicted = [ypred_preproc_knn, ypred_preproc_dt, y_KNN_without_preproc, y_DT_without_preproc]
+    models_name = ["KNN PREPROCESSING", "DT PREPROCESSING", "KNN NO PREPROCESSING", "DT NO PREPROCESSING"]
+    print("WITH KNN PREPROCESSING:\n", classification_report(Y_test, ypred_preproc_knn))
+    print("WITH DT PREPROCESSING:\n", classification_report(Y_test, ypred_preproc_dt))
+    print("WITH KNN NO PREPROCESSING:\n", classification_report(Y_test, y_KNN_without_preproc))
+    print("WITH DT NO PREPROCESSING:\n", classification_report(Y_test, y_DT_without_preproc))
+
+    Valuation.valuating_models(models_name, Y_test, y_predicted)
 
     fig, ax = plt.subplots()
     X_std = StandardScaler().fit_transform(X[['RNA 12', 'RNA EOT']])

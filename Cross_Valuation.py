@@ -7,10 +7,10 @@ def make_cross_evaluation(X_train, Y_train, clf, parameters, model_name):
     ########################################################################################################################
 
     model = clf
-    clf = GridSearchCV(estimator=model, param_grid=parameters, scoring='f1_weighted', cv=5)
-    clf.fit(X_train, Y_train)
+    grid_search_cv = GridSearchCV(estimator=model, param_grid=parameters, scoring='f1_weighted', cv=5)
+    grid_search_cv.fit(X_train, Y_train)
     print(model_name)
-    best_params = clf.best_params_
+    best_params = grid_search_cv.best_params_
 
     print('Overall, the best values for parameters are ', str(best_params),
-          ' since it leads to F1-score = ', clf.best_score_)
+          ' since it leads to F1-score = ', grid_search_cv.best_score_)
