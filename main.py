@@ -2,12 +2,15 @@ import os
 
 import numpy as np
 from mlxtend.plotting import plot_decision_regions
+from numpy import mean, std
 from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
 from sklearn.feature_selection import SelectFromModel, SelectKBest, VarianceThreshold, chi2
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score, \
-    precision_recall_curve, classification_report
-from sklearn.model_selection import train_test_split
+    precision_recall_curve, classification_report, ConfusionMatrixDisplay, confusion_matrix
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV, RepeatedStratifiedKFold, \
+    cross_val_score, cross_validate
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline, make_pipeline
 
@@ -22,7 +25,7 @@ import seaborn as sns
 import pandas as pd
 
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelEncoder, StandardScaler, LabelBinarizer, MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler, LabelBinarizer, MinMaxScaler, label_binarize
 from Logistic_Regression import Logistic_regression
 from SVM_classifier import SVM_classifier
 
@@ -33,8 +36,10 @@ normalization = False
 standardization = True
 preproc = True
 np.random.seed(31415)
-BEST_PARAMS_KNN = {'n_neighbors': 1, 'p': 1, 'weights': 'uniform'}
-BEST_PARAMS_DT = {'criterion': 'gini', 'max_depth': 9, 'splitter': 'best'}
+BEST_PARAMS_KNN_PREPROC = {'n_neighbors': 1, 'p': 1, 'weights': 'uniform'}
+BEST_PARAMS_DT_PREPROC = {'criterion': 'gini', 'max_depth': 9, 'splitter': 'best'}
+BEST_PARAMS_KNN_NO_PREPROC = {'n_neighbors': 1, 'p': 1, 'weights': 'uniform'}
+BEST_PARAMS_DT_NO_PREPROC = {'criterion': 'gini', 'max_depth': 9, 'splitter': 'best'}
 
 
 # used algorithms : Logistic Regression, DecisionTree, Clustering (K-means for evaluate number of classes)
@@ -100,7 +105,7 @@ def select_best_features_with_kbest(X_train, X_test, Y_train, Y_test, title, clf
             i) + " features")
         # print(X_new.shape)
         print(" X with selection K BEST \n" + str(X.columns.values[selector.get_support()]))
-        #Plotting.plot_lc_curve(X_train_new, Y_train, title, i, clf)
+        # Plotting.plot_lc_curve(X_train_new, Y_train, title, i, clf)
 
     sns.barplot(x=indexes, y=accuracy_scores)
     plt.xlabel("K features")
@@ -347,6 +352,30 @@ def normalization_(X):
     return X_std
 
 
+def ensamble(X_train, Y_train):
+    bgclassfier = BaggingClassifier(base_estimator=KNeighborsClassifier(**BEST_PARAMS_KNN_PREPROC))
+    crossvalidation = RepeatedStratifiedKFold(n_splits=5, n_repeats=10)
+    # Y_train = pd.DataFrame(data=label_binarize(Y_train, classes=[1,2,3,4]))
+    n_score = cross_validate(bgclassfier, X_train, Y_train, scoring="f1", cv=crossvalidation, n_jobs=-1,
+                             error_score='raise')
+    print(n_score)
+    print("F1-score: %.3f (%.3f)" % (mean(n_score), std(n_score)))
+
+    # sns.barplot()
+
+
+def confusionMatrix(y_test, y_pred, title):
+    f, axes = plt.subplots(1, 1, figsize=(10, 5))
+    disp = ConfusionMatrixDisplay(confusion_matrix(y_test,
+                                                   y_pred))
+    disp.plot(ax=axes, values_format='.3g')
+    disp.ax_.set_title(title)
+    disp.im_.colorbar.remove()
+    plt.subplots_adjust(wspace=0.20, hspace=0.1)
+    f.colorbar(disp.im_, ax=axes)
+    plt.show()
+
+
 if __name__ == '__main__':
 
     # Dati di input
@@ -440,8 +469,8 @@ if __name__ == '__main__':
     #          "Decision Tree with preprocessing")
 
     # ----------------------------------------Modelli coi best iperpar--------------------------
-    knn_model = KNeighborsClassifier(**BEST_PARAMS_KNN)
-    decis_tree = DecisionTreeClassifier(**BEST_PARAMS_DT)
+    knn_model = KNeighborsClassifier(**BEST_PARAMS_KNN_PREPROC)
+    decis_tree = DecisionTreeClassifier(**BEST_PARAMS_DT_PREPROC)
     # -----------------------------------------Modello finale Preprocessing---------------------
     clf_KNN_final = make_pipeline(select_k_best_KNN, knn_model)
     clf_DT_final = make_pipeline(select_k_best_DT, decis_tree)
@@ -465,6 +494,7 @@ if __name__ == '__main__':
     # -----------------------------------------NO PREPROCESSING----------------------------------
     y_KNN_without_preproc = clf_KNN_no_feat_sel.fit(X_train, Y_train).predict(X_test)
     y_DT_without_preproc = DecisionTreeClassifier().fit(X_train, Y_train).predict(X_test)
+    # -------------------------------------------------------------------------------------------
 
     y_predicted = [ypred_preproc_knn, ypred_preproc_dt, y_KNN_without_preproc, y_DT_without_preproc]
     models_name = ["KNN PREPROCESSING", "DT PREPROCESSING", "KNN NO PREPROCESSING", "DT NO PREPROCESSING"]
@@ -472,9 +502,19 @@ if __name__ == '__main__':
     print("WITH DT PREPROCESSING:\n", classification_report(Y_test, ypred_preproc_dt))
     print("WITH KNN NO PREPROCESSING:\n", classification_report(Y_test, y_KNN_without_preproc))
     print("WITH DT NO PREPROCESSING:\n", classification_report(Y_test, y_DT_without_preproc))
+    le = LabelBinarizer()
+    print(Y_test.shape)
+    print(ypred_preproc_knn.shape)
+    y_test_bin = le.fit_transform(Y_test)
+    y_predicted_bin = le.fit_transform(ypred_preproc_knn)
+    print("Y after binarization:\n", y_test_bin, "\n", ypred_preproc_knn)
+    Valuation.valuating_models(models_name, y_test_bin, y_predicted_bin)
 
-    Valuation.valuating_models(models_name, Y_test, y_predicted)
-
+    confusionMatrix(Y_test, ypred_preproc_knn, "Confusion Matrix with KNN preprocessing")
+    confusionMatrix(Y_test, y_KNN_without_preproc, "Confusion Matrix with KNN no preprocessing")
+    confusionMatrix(Y_test, ypred_preproc_dt, "Confusion Matrix with DT preprocessing")
+    confusionMatrix(Y_test, y_DT_without_preproc, "Confusion Matrix with DT no preprocessing")
+    #ensamble(X_train_new_knn, Y_train)
     fig, ax = plt.subplots()
     X_std = StandardScaler().fit_transform(X[['RNA 12', 'RNA EOT']])
     decis_tree.fit(X_not_discret[['RNA 12', 'RNA EF']], Y)
