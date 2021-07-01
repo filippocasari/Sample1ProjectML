@@ -352,14 +352,14 @@ def normalization_(X):
     return X_std
 
 
-def ensamble(X_train, Y_train):
+def ensamble(X_train, Y_train, X_test, y_test):
     bgclassfier = BaggingClassifier(base_estimator=KNeighborsClassifier(**BEST_PARAMS_KNN_PREPROC))
     crossvalidation = RepeatedStratifiedKFold(n_splits=5, n_repeats=10)
     # Y_train = pd.DataFrame(data=label_binarize(Y_train, classes=[1,2,3,4]))
-    n_score = cross_validate(bgclassfier, X_train, Y_train, scoring="f1", cv=crossvalidation, n_jobs=-1,
-                             error_score='raise')
-    print(n_score)
-    print("F1-score: %.3f (%.3f)" % (mean(n_score), std(n_score)))
+    bgclassfier.fit(X_train, Y_train)
+
+    y_predicted = bgclassfier.predict(X_test)
+    print('Accuracy is ', accuracy_score(y_test, y_predicted))
 
     # sns.barplot()
 
@@ -514,7 +514,7 @@ if __name__ == '__main__':
     confusionMatrix(Y_test, y_KNN_without_preproc, "Confusion Matrix with KNN no preprocessing")
     confusionMatrix(Y_test, ypred_preproc_dt, "Confusion Matrix with DT preprocessing")
     confusionMatrix(Y_test, y_DT_without_preproc, "Confusion Matrix with DT no preprocessing")
-    #ensamble(X_train_new_knn, Y_train)
+    ensamble(X_train_new_knn, Y_train, X_test_new_knn, Y_test)
     fig, ax = plt.subplots()
     X_std = StandardScaler().fit_transform(X[['RNA 12', 'RNA EOT']])
     decis_tree.fit(X_not_discret[['RNA 12', 'RNA EF']], Y)
