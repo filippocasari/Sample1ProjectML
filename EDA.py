@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 from numpy import square
 from sklearn.cluster import KMeans
 
-from main import discretization_bool, discr_fun
+from main import discretization_bool
+from Discretization import discr_fun
 
 
 def clustering(X, title):
@@ -25,19 +26,19 @@ def clustering(X, title):
     plt.xlabel('Number of Clusters'), plt.ylabel('Inertia')
     plt.title(title)
     plt.show()
-    algorithm_final = KMeans(n_clusters=4, init='k-means++', n_init=10, max_iter=300, tol=0.0001, random_state=111,
+    algorithm_final = KMeans(n_clusters=4, init='k-means++', n_init=10,  random_state=111,
                              algorithm='elkan')
 
-    X3 = X[['Age', 'RNA EOT', 'RNA EF']].iloc[:, :].values
+    X3 = X[['Baseline histological Grading', 'RNA EOT', 'RNA EF']].iloc[:, :].values
     fig = plt.figure()
     algorithm_final.fit(X3)
     labels4 = algorithm_final.labels_
     # print(labels3)
 
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(xs=X['Age'], ys=X['RNA EOT'], zs=X['RNA EF'], marker='o', s=300,
+    ax.scatter(xs=X['Baseline histological Grading'], ys=X['RNA EOT'], zs=X['RNA EF'], marker='o', s=300,
                c=labels4)
-    ax.set_xlabel('Age')
+    ax.set_xlabel('Baseline histological Grading')
     ax.set_ylabel('RNA EOT')
     ax.set_zlabel('RNA EF')
     plt.title('Clusters '+title)
@@ -52,14 +53,15 @@ def analysis_dataset(df):
     # sns.set(style="ticks", color_codes=True)
     # plt.hist(df['Baselinehistological staging'])
     corr_matrix = df.corr()
-    sns.heatmap(corr_matrix, square=False )
+    plt.subplots(figsize=(30, 30))
+    sns.heatmap(corr_matrix, square=False, linewidths=.5,annot_kws={"fontsize":15} )
 
     plt.show()
     print(df.info())
     print(df.isnull())
     print(df.describe())
     print('Duplicate Values: ', len(df)-len(df.drop_duplicates()))
-    columns_to_show = ['Age', 'RNA 12', 'RNA EOT']
+    columns_to_show = ['Baseline histological Grading', 'RNA 12', 'RNA EOT']
     print(df.groupby(['Baselinehistological staging'])[columns_to_show].describe(percentiles=[]))
     X = df.drop(columns='Baselinehistological staging')
 
@@ -80,7 +82,7 @@ def analysis_dataset(df):
     plt.legend()
     #sns.countplot(x='RNA 12', hue=hue, data=df)
     plt.show()
-    '''
+    df=discr_fun(df)
     df.plot.scatter(x='RNA 12', y='RNA EF', c='Baselinehistological staging', logy=True, cmap='summer')
     plt.show()
     df.plot.scatter(x='RNA 12', y='RNA EOT', c='Baselinehistological staging', logy=True, cmap='autumn')
@@ -90,7 +92,7 @@ def analysis_dataset(df):
     plt.show()
     sns.boxplot(x='RNA EF', data=df)
     plt.show()
-    '''
+
     # print(df['Baselinehistological staging'])
 
 

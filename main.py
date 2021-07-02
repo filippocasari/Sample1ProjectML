@@ -17,6 +17,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.tree import DecisionTreeClassifier
 
 import Cross_Valuation
+import Discretization
 import EDA
 import Plotting
 import Valuation
@@ -45,29 +46,24 @@ BEST_PARAMS_DT_NO_PREPROC = {'criterion': 'gini', 'max_depth': 9, 'splitter': 'b
 # used algorithms : Logistic Regression, DecisionTree, Clustering (K-means for evaluate number of classes)
 
 
-def plot_metrics_for_each_features(X, name_png=None):
+def plot_metrics_for_each_features(df, name_png=None):
     figures = []
+    X = df.drop(columns='Baselinehistological staging')
     names_cols = X.columns
+    df = Discretization.discr_fun(df)
     try:
         os.makedirs("./plots")
     except FileExistsError:
         # directory already exists
         pass
-    fig, axes = plt.subplots(5, 6)
+    fig, axes = plt.subplots(ncols=6, nrows=5, figsize=(30, 30))
     index = 0
-    j = 1
-    for i in X.columns:
-        '''
-        figure = sns.displot(X, x=i)
-        figures.append(figure)
-        figure.savefig("./plots/" + str(i) + name_png)
-        plt.close()  # plot close per chiudere la finestra di plot, onde evitare troppi  (>20)\
-        # ed avere un errore a Runtime'''
-        j += 1
-        sns.catplot(data=X, x=i, kind="count")
-        # axes[index].set_title(i)
 
-    plt.show()
+    for i in names_cols:
+        sns.catplot(data=df, x=i, kind="count", hue='Baselinehistological staging')
+        plt.show()
+
+    # axes[index].set_title(i)
 
 
 def splitting_train_test(X, Y):
@@ -147,164 +143,6 @@ def select_from_model(X, Y, clf, title):
     return X_new
 
 
-def discretization_Age(i):
-    if i in range(0, 33):
-        i = 0
-    elif i in range(33, 38):
-        i = 1
-    elif i in range(38, 43):
-        i = 2
-    elif i in range(43, 48):
-        i = 3
-    elif i in range(48, 53):
-        i = 4
-    elif i in range(53, 58):
-        i = 5
-    else:
-        i = 6
-
-    return i
-
-
-def discretization_BMI(i):
-    if i in range(0, 18):
-        i = 0
-    elif i in range(18, 25):
-        i = 1
-    elif i in range(25, 30):
-        i = 2
-    elif i in range(30, 35):
-        i = 3
-    elif i in range(35, 40):
-        i = 4
-    elif i in range(53, 58):
-        i = 5
-
-    return i
-
-
-def discretization_WBC(i):
-    if i in range(0, 4000):
-        i = 0
-    elif i in range(4000, 11000):
-        i = 1
-    elif i in range(11000, 12102):
-        i = 2
-
-    return i
-
-
-def discretization_RBC(i):
-    if 0 <= i < 3000000:
-        i = 0
-    elif 3000000 <= i < 5000000:
-        i = 1
-    elif 5018452 > i >= 5000000:
-        i = 2
-
-    return i
-
-
-def discretization_Plat(i):
-    if 93013 <= i < 100000:
-        i = 0
-    elif 100000 <= i < 225000:
-        i = 1
-    elif 225000 <= i < 226465:
-        i = 2
-
-    return i
-
-
-def discretization_AST_ALT(i):
-    if 0 <= i < 20:
-        i = 0
-    elif 20 <= i <= 40:
-        i = 1
-    elif 40 < i <= 128:
-        i = 2
-
-    return i
-
-
-def discretization_HGB(df):
-    print(df.loc[df.Gender == 1, 'HGB'])
-
-
-def discretization_RNA(i):
-    if 0 <= i <= 5:
-        i = 0
-    elif i > 5:
-        i = 1
-
-    return i
-
-
-def discr_male_HGB(i):
-    if 2 <= i < 14:
-        i = 0
-    elif 14 <= i <= 17:
-        i = 1
-    elif 17 < i <= 20:
-        i = 2
-    return i
-
-
-def discr_female_HGB(i):
-    if 2 <= i < 12:
-        i = 0
-    elif 12 <= i <= 15:
-        i = 1
-    elif 15 < i <= 20:
-        i = 2
-    return i
-
-
-def discr_HGB(df):
-    df['HGB'] = df['HGB'].apply(lambda x: discr_male_HGB(x) if x == 1 else discr_female_HGB(x))
-    print(df['HGB'])
-    return df
-
-
-def discr_fun(X):
-    X = discr_HGB(X)
-    X['Age'] = X['Age'].apply(discretization_Age)
-    X['BMI'] = X['BMI'].apply(discretization_BMI)
-    X['WBC'] = X['WBC'].apply(discretization_WBC)
-    X['RBC'] = X['RBC'].apply(discretization_RBC)
-    X['Plat'] = X['Plat'].apply(discretization_Plat)
-    X['AST 1'] = X['AST 1'].apply(discretization_AST_ALT)
-    X['ALT 1'] = X['ALT 1'].apply(discretization_AST_ALT)
-    X['ALT 4'] = X['ALT 4'].apply(discretization_AST_ALT)
-    X['ALT 12'] = X['ALT 12'].apply(discretization_AST_ALT)
-    X['ALT 24'] = X['ALT 24'].apply(discretization_AST_ALT)
-    X['ALT 36'] = X['ALT 36'].apply(discretization_AST_ALT)
-    X['ALT 48'] = X['ALT 48'].apply(discretization_AST_ALT)
-    X['RNA Base'] = X['RNA Base'].apply(discretization_RNA)
-    X['RNA 4'] = X['RNA 4'].apply(discretization_RNA)
-    X['RNA 12'] = X['RNA 12'].apply(discretization_RNA)
-    X['RNA EOT'] = X['RNA EOT'].apply(discretization_RNA)
-    X['RNA EF'] = X['RNA EF'].apply(discretization_RNA)
-
-    return X
-
-
-# TODO Target encoder sulle features
-def converting_to_0_and_1(X):
-    le = LabelBinarizer()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
-    # i valori variano e possono essere 1 o 2. Li converto in 0 e 1 per maggior praticità
-    X['Gender'] = le.fit_transform(X['Gender'])
-    # print("Gender array: \n"+str(X['Gender']))
-    X['Nausea or Vomiting'] = le.fit_transform(X['Nausea or Vomiting'])
-    X['Headache '] = le.fit_transform(X['Headache '])
-    X['Diarrhea '] = le.fit_transform(X['Diarrhea '])
-    X['Fatigue & generalized bone ache '] = le.fit_transform(X['Fatigue & generalized bone ache '])
-    X['Jaundice '] = le.fit_transform(X['Jaundice '])
-    X['Epigastric pain '] = le.fit_transform(X['Epigastric pain '])
-
-    return X
-
-
 def counting_features(Y):
     if count_features:
         # inizio conteggio per ogni classe, per vedere se è bilanciato
@@ -346,7 +184,7 @@ def binarizing_problem(i):
 
 
 def normalization_(X):
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
     names_cols = X.columns  # nomi delle colonne
     X_std = pd.DataFrame(scaler.fit_transform(X[names_cols]), columns=names_cols)
     return X_std
@@ -382,7 +220,7 @@ if __name__ == '__main__':
     input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
     df = pd.read_csv(input_file, header=0)
     print("Starting EDA...")
-    EDA.analysis_dataset(df)
+    # EDA.analysis_dataset(df)
 
     print("EDA finished")
     # df describe, descrive il dataset, inizio EDA
@@ -391,15 +229,15 @@ if __name__ == '__main__':
     X_not_discret = X.copy()
     EDA.clustering(X_not_discret, "evaluation without discretization")
     if discretization_bool:
-        X = discr_fun(X)
+        X = Discretization.discr_fun(X)
+        X = Discretization.converting_to_0_and_1(X)
         EDA.clustering(X, "evaluation with discretization")
 
     Y = df['Baselinehistological staging']
     Y = Y.astype(int)  # converto in type int
-    X = converting_to_0_and_1(X)
-
+    plt.close()
     df = pd.concat([X, Y], axis=1)
-    # plot_metrics_for_each_features(df, "ciao")
+    plot_metrics_for_each_features(df, "df")
     name_columns = X.columns
     print("X:\n" + str(X))
     # discretization_HGB(X) # TODO da rivedere
@@ -442,16 +280,16 @@ if __name__ == '__main__':
 
     clf_KNN_no_feat_sel = KNeighborsClassifier()
     clf_DT_no_feat_sel = DecisionTreeClassifier()
-    k_migliore_knn, accuracy_max_knn, X_train_new_knn, X_test_new_knn = select_best_features_with_kbest(X_train_std,
-                                                                                                        X_test_std,
-                                                                                                        Y_train_std,
-                                                                                                        Y_test_std,
+    k_migliore_knn, accuracy_max_knn, X_train_new_knn, X_test_new_knn = select_best_features_with_kbest(X_train_norm,
+                                                                                                        X_test_norm,
+                                                                                                        Y_train_norm,
+                                                                                                        Y_test_norm,
                                                                                                         "KNN",
                                                                                                         clf_KNN_no_feat_sel)
-    k_migliore_dt, accuracy_max_dt, X_train_new_dt, X_test_new_dt = select_best_features_with_kbest(X_train_std,
-                                                                                                    X_test_std,
-                                                                                                    Y_train_std,
-                                                                                                    Y_test_std,
+    k_migliore_dt, accuracy_max_dt, X_train_new_dt, X_test_new_dt = select_best_features_with_kbest(X_train_norm,
+                                                                                                    X_test_norm,
+                                                                                                    Y_train_norm,
+                                                                                                    Y_test_norm,
                                                                                                     "Decision Tree",
                                                                                                     clf_DT_no_feat_sel)
     print("Ho selezionato col KNN un numero di feature 'k': ", k_migliore_knn, "\n con accuracy: ", accuracy_max_knn)
