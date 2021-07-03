@@ -131,6 +131,7 @@ def discr_fun(X):
     X['ALT 1'] = X['ALT 1'].apply(discretization_AST_ALT)
     X['ALT 4'] = X['ALT 4'].apply(discretization_AST_ALT)
     X['ALT 12'] = X['ALT 12'].apply(discretization_AST_ALT)
+    X['ALT 24']=X['ALT 24'].apply(discretization_AST_ALT)
     X['ALT after 24 w'] = X['ALT after 24 w'].apply(discretization_AST_ALT)
     X['ALT 36'] = X['ALT 36'].apply(discretization_AST_ALT)
     X['ALT 48'] = X['ALT 48'].apply(discretization_AST_ALT)
