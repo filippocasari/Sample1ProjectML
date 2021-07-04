@@ -16,7 +16,7 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer, MinMaxScaler
-from time import process_time
+from time import process_time, time
 
 # ----------------------------------GLOBAL VARIABLES----------------------------------------------
 count_features = False
@@ -372,30 +372,30 @@ if __name__ == '__main__':
     # ---------------------------------PREDICTION------------------------------------------------
     clf_KNN_final = best_estimator_knn
     clf_DT_final = best_estimator_dt
-    t1_start = process_time()
+    t1_start = time()
     ypred_preproc_knn = clf_KNN_final.predict(X_test_new_knn)
-    t1_stop = process_time()
-    print("process time for KNN Preprocessing: ", t1_stop - t1_start)
-    t_start = process_time()
+    t1_stop = time()
+    print("process time for KNN Preprocessing:  %.20f", t1_stop - t1_start)
+    t_start = time()
     ypred_preproc_dt = clf_DT_final.predict(X_test_new_dt)
-    t_stop = process_time()
-    print("process time for DT preprocessing: ", t_stop - t_start)
+    t_stop = time()
+    print("process time for DT preprocessing:  %.20f", t_stop - t_start)
     # clf_KNN_final.fit(X_train_norm, Y_train_norm)
     # clf_DT_final.fit(X_train_norm, Y_train_norm)
     # ypred_preproc_knn = clf_KNN_final.predict(X_test_norm)
     # ypred_preproc_dt = clf_DT_final.predict(X_test_norm)
 
     # -----------------------------------------NO PREPROCESSING NOR CROSS VALIDATION----------------------------------
-    t2_start = process_time()
+    t2_start = time()
     clf1 = KNeighborsClassifier().fit(X_train_no_preproc, Y_train_no_preproc)
     y_KNN_without_preproc = clf1.predict(X_test_no_preproc)
-    t2_stop = process_time()
+    t2_stop = time()
     print("Time for KNN NO PREPROCESSING:  %.20f" % (t2_stop - t2_start))
 
     clf2 = DecisionTreeClassifier().fit(X_train_no_preproc, Y_train_no_preproc)
-    t3_start = process_time()
+    t3_start = time()
     y_DT_without_preproc = clf2.predict(X_test_no_preproc)
-    t3_stop = process_time()
+    t3_stop = time()
     print("Time for DT NO PREPROCESSING: %.20f" % (t3_stop - t3_start))
     # -------------------------------------------------------------------------------------------
     # NO PREPROCESSING, WITH CROSS VALIDATION
