@@ -1,16 +1,10 @@
-from itertools import cycle
 
-import numpy as np
 from matplotlib import pyplot as plt
-from sklearn import preprocessing
-from sklearn.metrics import precision_recall_curve, roc_curve, roc_auc_score, f1_score, recall_score, precision_score, \
-    accuracy_score, auc, RocCurveDisplay
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.tree import DecisionTreeClassifier
+
+from sklearn.metrics import precision_recall_curve, roc_curve
 
 
-def valuating_models(models_name, y_test, y_predicted):
+def evaluating_models( y_test, y_predicted, name):
     ########################################################################################################################
     # #######                                              EVALUATION                                              ####### #
     ########################################################################################################################
@@ -25,7 +19,20 @@ def valuating_models(models_name, y_test, y_predicted):
     plt.xlabel("recall")
     plt.ylabel("precision")
     plt.legend(loc="best")
-    plt.title("precision vs. recall curve for Neural network")
+    plt.title("precision vs. recall curve for "+name)
     plt.show()
 
+    # roc curve
+    fpr = dict()
+    tpr = dict()
+
+    for i in range(4):
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i],
+                                      y_predicted[:, i])
+        plt.plot(fpr[i], tpr[i], lw=2, label='class {}'.format(i))
+
+    plt.xlabel("false positive rate")
+    plt.ylabel("true positive rate")
+    plt.legend(loc="best")
+    plt.title("ROC curve for "+name)
     plt.show()

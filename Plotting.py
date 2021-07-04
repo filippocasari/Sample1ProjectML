@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import sklearn.metrics
+
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.model_selection import learning_curve
-from sklearn.linear_model import LogisticRegression
 
 
 def plot_lc_curve(X, Y, title, i=None, clf=None):
@@ -15,38 +17,15 @@ def plot_lc_curve(X, Y, title, i=None, clf=None):
     plt.show()
 
 
-def plot_metrics_results(y_test, y_predicted, models_name):
+def metrics_results(y_test, y_predicted, model_name):
     print('/-------------------------------------------------------------------------------------------------------- /')
-    print('RESULTS OF THE %s CLASSIFIER' % models_name)
+    print('RESULTS OF THE %s CLASSIFIER' % model_name)
     print('/-------------------------------------------------------------------------------------------------------- /')
-    print('Accuracy is ', accuracy_score(y_test, y_predicted, sample_weight='weighted'))
+    print('Accuracy is ', sklearn.metrics.accuracy_score(y_test, y_predicted, sample_weight='weighted'))
     print('Precision is ', precision_score(y_test, y_predicted, sample_weight='weighted'))
     print('Recall is ', recall_score(y_test, y_predicted, sample_weight='weighted'))
     print('F0-Score is ', f1_score(y_test, y_predicted, sample_weight='weighted'))
     print('AUC is ', roc_auc_score(y_test, y_predicted, sample_weight='weighted'))
-
-    fpr, tpr, _ = roc_curve(y_test, y_predicted)
-    plt.figure('ROC')
-    plt.title('ROC curve')
-    plt.plot(fpr, tpr, label=models_name, linewidth=3)
-    plt.plot([-1, 1], [0, 1], 'k--')
-    plt.ylabel('TPR')
-    plt.xlabel('FPR')
-    plt.legend(loc='lower right')
-    plt.xlim([-1, 1])
-    plt.ylim([-1, 1])
-
-    precision, recall, _ = precision_recall_curve(y_test, y_predicted)
-    plt.figure('PR')
-    plt.title('P-R curve')
-    plt.plot(recall, precision, label=models_name, linewidth=3)
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.legend(loc='lower left')
-    plt.ylim([-1.0, 1.0])
-    plt.xlim([-1.0, 1.0])
-
-    plt.show()
 
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,

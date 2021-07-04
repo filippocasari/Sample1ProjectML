@@ -8,21 +8,21 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 import seaborn as sns
 
+import Discretization
+
 input_file = "./HCV-Egy-Data/HCV-Egy-Data.csv"
 df = pd.read_csv(input_file, header=0)
 
-dataset = df.values
 
-X = dataset[:, 0:28]
-for i in X:
-    for j in i:
-        j = np.where(j == '?', 0, j)
+
+X = df.drop(columns='Baselinehistological staging')
 
 # print(X)
-Y = dataset[:, 28]
+Y = df['Baselinehistological staging']
 Y = Y.astype(int)
 le = LabelEncoder()
 Y = le.fit_transform(Y)
+X=Discretization.discr_fun(X)
 print(Y)
 oftr_model = LogisticRegression(class_weight='balanced',
                                 multi_class='multinomial',
@@ -32,12 +32,11 @@ X_scale = min_max_scaler.fit_transform(X)
 
 print("X:\n", X)
 print("Y: \n", Y)
-X_train, X_val_and_test, Y_train, \
-Y_val_and_test = \
-    train_test_split(X_scale, Y, test_size=0.3)
-X_val, X_test, Y_val, Y_test = train_test_split \
-    (X_val_and_test, Y_val_and_test, test_size=0.5)
-print("Shape of whole dataset : " + str(dataset.shape))
+X_train, X_test, Y_train, \
+Y_test = \
+    train_test_split(X.drop(columns='RNA Base'), Y, test_size=0.3)
+
+print("Shape of whole dataset : " + str(df.shape))
 min_max_scaler.fit(X_train)
 X_train = min_max_scaler.transform(X_train)
 X_test = min_max_scaler.transform(X_test)

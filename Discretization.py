@@ -1,6 +1,8 @@
 from sklearn.preprocessing import LabelBinarizer
 
 
+# ------------------------------------------DISCRETIZATION CRITERIA-----------------------------------------------------
+
 def discretization_Age(i):
     if i in range(0, 33):
         i = 0
@@ -131,7 +133,7 @@ def discr_fun(X):
     X['ALT 1'] = X['ALT 1'].apply(discretization_AST_ALT)
     X['ALT 4'] = X['ALT 4'].apply(discretization_AST_ALT)
     X['ALT 12'] = X['ALT 12'].apply(discretization_AST_ALT)
-    X['ALT 24']=X['ALT 24'].apply(discretization_AST_ALT)
+    X['ALT 24'] = X['ALT 24'].apply(discretization_AST_ALT)
     X['ALT after 24 w'] = X['ALT after 24 w'].apply(discretization_AST_ALT)
     X['ALT 36'] = X['ALT 36'].apply(discretization_AST_ALT)
     X['ALT 48'] = X['ALT 48'].apply(discretization_AST_ALT)
@@ -149,7 +151,7 @@ def converting_to_0_and_1(X):
     le = LabelBinarizer()  # instanza che converte dal range [1,2,3,4] a [0,1,2,3]
     # i valori variano e possono essere 1 o 2. Li converto in 0 e 1 per maggior praticità
     X['Gender'] = le.fit_transform(X['Gender'])
-    X['Fever']=le.fit_transform(X['Fever'])
+    X['Fever'] = le.fit_transform(X['Fever'])
 
     # print("Gender array: \n"+str(X['Gender']))
     X['Nausea or Vomiting'] = le.fit_transform(X['Nausea or Vomiting'])
