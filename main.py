@@ -11,7 +11,7 @@ import Cross_Validation
 import Discretization
 import EDA
 import Plotting
-import Valuation
+import Evaluation
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -450,11 +450,11 @@ if __name__ == '__main__':
     # print("Y after binarization:\n", y_test_bin, "\n", ypred_preproc_knn)
 
     # Plot just 2 ROC curves and 2 Precision Recall
-    Valuation.evaluating_models(y_test_bin, y_predicted_bin_KNN_with_preproc, "KNN with Preprocessing")
+    Evaluation.evaluating_models(y_test_bin, y_predicted_bin_KNN_with_preproc, "KNN with Preprocessing")
     y_predicted_bin_DT_with_preproc = le.fit_transform(ypred_preproc_dt)
     y_predicted_bin_DT_no_preproc = le.fit_transform(y_DT_without_preproc)
     y_predicted_bin_KNN_no_preproc = le.fit_transform(y_KNN_without_preproc)
-    Valuation.evaluating_models(y_test_bin, y_predicted_bin_DT_with_preproc,
+    Evaluation.evaluating_models(y_test_bin, y_predicted_bin_DT_with_preproc,
                                 "Decison Tree with Preprocessing")
 
     # create and Plot Confusion matrix
